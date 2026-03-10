@@ -2,6 +2,7 @@
 
 A RESTful API for managing contacts built with NestJS, Prisma ORM, and MariaDB/MySQL.
 
+> [!NOTE]
 > This project is part of my personal learning journey to explore NestJS and backend development best practices. Feel free to use it as a reference or starting point for your own projects!
 
 ## Project Status
@@ -10,6 +11,7 @@ This project is currently in the setup phase. The core infrastructure has been c
 
 ## Table of Contents
 
+- [Changelog](./CHANGELOG.md)
 - [Description](#description)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
@@ -51,7 +53,7 @@ The project follows industry best practices including proper error handling, req
 - **Request Validation** - DTO-based validation using class-validator with detailed error messages
 - **Rate Limiting** - Configurable request throttling to prevent abuse
 - **API Versioning** - URI-based versioning (`/v1/...`) for backward compatibility
-- **Internationalization (i18n)** - Multi-language support (English & Indonesian)
+- **Internationalization (i18n)** - Multi-language support (English & Indonesian for now)
 - **Request Tracing** - Unique request ID for each request via `X-Request-Id` header
 - **Structured Logging** - JSON-formatted logs using Pino for production, pretty logs for development
 - **Security Headers** - HTTP security headers via Helmet middleware
@@ -75,7 +77,7 @@ nest-contact-management/
 │   │   ├── pipes/             # Validation pipes (AppValidationPipe)
 │   │   ├── prisma/            # Prisma service module
 │   │   ├── rate-limit/        # Rate limiting configuration
-│   │   └── utils/             # Utility functions (type guards, error mappers)
+│   │   └── utils/             # Utility functions (type guards, error mappers, i18n path resolver)
 │   ├── generated/
 │   │   └── prisma/            # Generated Prisma client
 │   ├── i18n/
@@ -98,6 +100,7 @@ nest-contact-management/
 ├── prisma.config.ts           # Prisma configuration
 ├── tsconfig.json              # TypeScript configuration
 ├── LICENSE.txt                # Project License
+├── CHANGELOG.md               # Project changelog
 └── README.md                  # Project documentation
 ```
 

@@ -19,9 +19,9 @@ async function bootstrap() {
     });
 
     // Global standards
-    // app.useGlobalPipes(AppValidationPipe); //set at AppModule.providers
-    // app.useGlobalFilters(new HttpExceptionFilter()); //set at AppModule.providers
-    // app.useGlobalInterceptors(app.get(ResponseTransformInterceptor)); //set at AppModule.providers
+    // app.useGlobalPipes(AppValidationPipe); //set at AppModule providers
+    // app.useGlobalFilters(new HttpExceptionFilter()); //set at AppModule providers
+    // app.useGlobalInterceptors(app.get(ResponseTransformInterceptor)); //set at AppModule providers
 
     const port = process.env.PORT ? Number(process.env.PORT) : 3000;
     await app.listen(port);

@@ -12,9 +12,9 @@ import { HealthModule } from './modules/health/health.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 import { AcceptLanguageResolver, CookieResolver, HeaderResolver, I18nJsonLoader, I18nModule, QueryResolver } from 'nestjs-i18n';
-import { join } from 'path';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RATE_LIMIT_POLICY } from './common/rate-limit/rate-limit.policy';
+import { resolveI18nPath } from './common/utils/i18n-path-resolver.util';
 
 @Module({
     imports: [
@@ -31,7 +31,7 @@ import { RATE_LIMIT_POLICY } from './common/rate-limit/rate-limit.policy';
             fallbackLanguage: 'en',
             loader: I18nJsonLoader,
             loaderOptions: {
-                path: join(__dirname, 'i18n/'),
+                path: resolveI18nPath(),
                 watch: process.env.NODE_ENV === 'development',
             },
             resolvers: [

@@ -1,8 +1,7 @@
 {
     "include": [
         "src/**/*.ts",
-        "src/**/*.d.ts",
-        "prisma.config.ts"
+        "src/**/*.d.ts"
     ],
     "compilerOptions": {
         "module": "CommonJS",
