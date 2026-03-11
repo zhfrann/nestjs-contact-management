@@ -48,4 +48,13 @@ export const I18N_KEYS = {
         networkAuthenticationRequired: 'common.error.networkAuthenticationRequired',
         validationFailed: 'common.error.validationFailed',
     },
+    auth: {
+        response: {
+            registerSuccess: 'auth.response.registerSuccess',
+        },
+        error: {
+            emailTaken: 'auth.error.emailTaken',
+            usernameTaken: 'auth.error.usernameTaken',
+        },
+    },
 } as const;
