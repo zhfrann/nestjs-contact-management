@@ -13,3 +13,105 @@ generator client {
 datasource db {
     provider = "mysql"
 }
+
+enum UserStatus {
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+}
+
+enum AddressLabel {
+    HOME
+    WORK
+    OTHER
+}
+
+model User {
+    id           String     @id @default(cuid())
+    username     String     @unique
+    email        String     @unique
+    passwordHash String
+    firstName    String
+    lastName     String?
+    photoUrl     String?
+    photoKey     String?
+    status       UserStatus @default(ACTIVE)
+    lastLoginAt  DateTime?
+
+    contacts     Contact[]
+    authSessions AuthSession[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([status])
+    @@map("users")
+}
+
+model Contact {
+    id         String    @id @default(cuid())
+    ownerId    String
+    firstName  String
+    lastName   String?
+    email      String?
+    phone      String
+    notes      String?
+    isFavorite Boolean   @default(false)
+    deletedAt  DateTime?
+
+    owner     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+    addresses Address[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([ownerId, phone])
+    // pencarian umum
+    @@index([ownerId])
+    @@index([ownerId, firstName])
+    @@index([ownerId, lastName])
+    @@index([ownerId, email])
+    @@index([ownerId, phone])
+    @@map("contacts")
+}
+
+model Address {
+    id          String       @id @default(cuid())
+    contactId   String
+    label       AddressLabel @default(HOME)
+    street      String
+    city        String
+    province    String
+    postalCode  String
+    countryCode String // ISO 3166-1 alpha-2 (contoh: ID, US)
+    isPrimary   Boolean      @default(false)
+
+    contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([contactId])
+    @@index([countryCode])
+    @@map("addresses")
+}
+
+model AuthSession {
+    id               String    @id @default(cuid())
+    userId           String
+    refreshTokenHash String
+    userAgent        String?
+    ipAddress        String?
+    expiresAt        DateTime
+    revokedAt        DateTime?
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+    @@index([expiresAt])
+    @@index([revokedAt])
+    @@map("auth_sessions")
+}
