@@ -15,6 +15,8 @@ import { AcceptLanguageResolver, CookieResolver, HeaderResolver, I18nJsonLoader,
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RATE_LIMIT_POLICY } from './common/rate-limit/rate-limit.policy';
 import { resolveI18nPath } from './common/utils/i18n-path-resolver.util';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
     imports: [
@@ -55,6 +57,8 @@ import { resolveI18nPath } from './common/utils/i18n-path-resolver.util';
         }),
         PrismaModule,
         HealthModule,
+        AuthModule,
+        UsersModule,
     ],
     controllers: [AppController],
     providers: [
