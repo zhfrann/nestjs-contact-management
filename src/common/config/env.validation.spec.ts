@@ -28,6 +28,8 @@ describe('validateEnv', () => {
             JWT_REFRESH_SECRET: 'supersecret-refresh',
             JWT_ACCESS_EXPIRES_IN: '15m',
             JWT_REFRESH_EXPIRES_IN: '7d',
+            COOKIE_REFRESH_NAME: 'refreshToken',
+            COOKIE_REFRESH_PATH: '/v1/auth/refresh',
         });
     });
 
