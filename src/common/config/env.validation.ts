@@ -39,8 +39,8 @@ const envSchema = z.object({
         .regex(/^(\d+)(s|m|h|d)$/)
         .default('7d'),
 
-    COOKIE_REFRESH_NAME: z.string().trim().min(1).default('refreshToken'),
-    COOKIE_REFRESH_PATH: z.string().trim().startsWith('/').default('/v1/auth/refresh'),
+    REFRESH_COOKIE_NAME: z.string().trim().min(1).default('refreshToken'),
+    REFRESH_COOKIE_PATH: z.string().trim().startsWith('/').default('/v1/auth/refresh'),
 });
 
 /**

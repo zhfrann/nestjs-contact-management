@@ -3,6 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { UserStatus } from 'src/generated/prisma/enums';
+import { ConfigService } from '@nestjs/config';
 
 describe('AuthController', () => {
     let controller: AuthController;
@@ -25,13 +26,15 @@ describe('AuthController', () => {
             register: jest.fn(),
         };
 
+        const mockConfigService = {
+            get: jest.fn(),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             controllers: [AuthController],
             providers: [
-                {
-                    provide: AuthService,
-                    useValue: mockAuthService,
-                },
+                { provide: AuthService, useValue: mockAuthService },
+                { provide: ConfigService, useValue: mockConfigService },
             ],
         }).compile();
 

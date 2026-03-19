@@ -4,12 +4,16 @@ import * as argon2 from 'argon2';
 import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
-import { RegisterRequest } from './types/register-request.type';
+import { RegisterRequest } from './types/auth-request.type';
 import { UserStatus } from 'src/generated/prisma/enums';
+import { PrismaService } from 'src/common/prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 // Mock argon2
 jest.mock('argon2', () => ({
     hash: jest.fn(),
+    verify: jest.fn(),
     argon2id: 2,
 }));
 
@@ -44,15 +48,32 @@ describe('AuthService', () => {
         const mockUsersService = {
             findByEmailOrUsername: jest.fn(),
             createUser: jest.fn(),
+            findByIdentifier: jest.fn(),
+        };
+
+        const mockPrismaService = {
+            authSession: {
+                create: jest.fn(),
+                update: jest.fn(),
+            },
+        };
+
+        const mockJwtService = {
+            signAsync: jest.fn(),
+        };
+
+        const mockConfigService = {
+            get: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AuthService,
-                {
-                    provide: UsersService,
-                    useValue: mockUsersService,
-                },
+                { provide: UsersService, useValue: mockUsersService },
+                { provide: UsersService, useValue: mockUsersService },
+                { provide: PrismaService, useValue: mockPrismaService },
+                { provide: JwtService, useValue: mockJwtService },
+                { provide: ConfigService, useValue: mockConfigService },
             ],
         }).compile();
 

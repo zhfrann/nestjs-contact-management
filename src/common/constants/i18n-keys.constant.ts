@@ -51,10 +51,16 @@ export const I18N_KEYS = {
     auth: {
         response: {
             registerSuccess: 'auth.response.registerSuccess',
+            loginSuccess: 'auth.response.loginSuccess',
+            refreshSuccess: 'auth.response.refreshSuccess',
+            logoutSuccess: 'auth.response.logooutSuccess',
         },
         error: {
             emailTaken: 'auth.error.emailTaken',
             usernameTaken: 'auth.error.usernameTaken',
+            invalidCredentials: 'auth.error.invalidCredentials',
+            refreshTokenMissing: 'auth.error.refreshTokenMissing',
+            refreshTokenInvalid: 'auth.error.refreshTokenInvalid',
         },
     },
 } as const;

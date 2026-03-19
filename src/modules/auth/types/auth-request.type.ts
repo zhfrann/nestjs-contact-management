@@ -5,3 +5,10 @@ export type RegisterRequest = {
     firstName: string;
     lastName?: string;
 };
+
+export type LoginRequest = {
+    identifier: string;
+    password: string;
+    userAgent?: string;
+    ipAddress?: string;
+};

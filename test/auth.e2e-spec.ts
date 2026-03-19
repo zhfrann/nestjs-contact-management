@@ -46,10 +46,7 @@ describe('Auth (e2e)', () => {
 
         describe('Success Cases', () => {
             it('should register a new user successfully', async () => {
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(validPayload)
-                    .expect(201);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(validPayload).expect(201);
 
                 expect(response.body).toMatchObject({
                     message: expect.any(String),
@@ -66,9 +63,7 @@ describe('Auth (e2e)', () => {
                     },
                     meta: {
                         requestId: expect.any(String),
-                        timestamp: expect.stringMatching(
-                            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/,
-                        ),
+                        timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/),
                     },
                 });
 
@@ -81,10 +76,7 @@ describe('Auth (e2e)', () => {
                 const payload = { ...validPayload };
                 delete (payload as { lastName?: string }).lastName;
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(201);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(201);
 
                 expect(response.body.data.lastName).toBeNull();
             });
@@ -95,10 +87,7 @@ describe('Auth (e2e)', () => {
                     email: '  JOHN@EXAMPLE.COM  ',
                 };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(201);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(201);
 
                 expect(response.body.data.email).toBe('john@example.com');
             });
@@ -109,10 +98,7 @@ describe('Auth (e2e)', () => {
                     username: '  johndoe  ',
                 };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(201);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(201);
 
                 expect(response.body.data.username).toBe('johndoe');
             });
@@ -128,10 +114,7 @@ describe('Auth (e2e)', () => {
             });
 
             it('should return English success message by default', async () => {
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(validPayload)
-                    .expect(201);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(validPayload).expect(201);
 
                 expect(response.body.message).toBe('User registered successfully');
             });
@@ -140,9 +123,7 @@ describe('Auth (e2e)', () => {
         describe('Conflict Cases (409)', () => {
             beforeEach(async () => {
                 // Create existing user
-                await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(validPayload);
+                await request(app.getHttpServer()).post('/v1/auth/register').send(validPayload);
             });
 
             it('should return 409 when email is already taken', async () => {
@@ -151,10 +132,7 @@ describe('Auth (e2e)', () => {
                     username: 'different_user',
                 };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(409);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(409);
 
                 expect(response.body).toMatchObject({
                     error: {
@@ -174,10 +152,7 @@ describe('Auth (e2e)', () => {
                     email: 'different@example.com',
                 };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(409);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(409);
 
                 expect(response.body.error.code).toBe('CONFLICT');
             });
@@ -200,10 +175,7 @@ describe('Auth (e2e)', () => {
 
         describe('Validation Cases (400)', () => {
             it('should return 400 when required fields are missing', async () => {
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send({})
-                    .expect(400);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send({}).expect(400);
 
                 expect(response.body.error.code).toBe('VALIDATION_ERROR');
                 expect(response.body.error.details).toEqual(
@@ -219,18 +191,13 @@ describe('Auth (e2e)', () => {
             it('should return 400 when username is too short', async () => {
                 const payload = { ...validPayload, username: 'ab' };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(400);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(400);
 
                 expect(response.body.error.details).toEqual(
                     expect.arrayContaining([
                         expect.objectContaining({
                             field: 'username',
-                            issues: expect.arrayContaining([
-                                expect.stringContaining('must be longer'),
-                            ]),
+                            issues: expect.arrayContaining([expect.stringContaining('must be longer')]),
                         }),
                     ]),
                 );
@@ -239,18 +206,13 @@ describe('Auth (e2e)', () => {
             it('should return 400 when email is invalid', async () => {
                 const payload = { ...validPayload, email: 'not-an-email' };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(400);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(400);
 
                 expect(response.body.error.details).toEqual(
                     expect.arrayContaining([
                         expect.objectContaining({
                             field: 'email',
-                            issues: expect.arrayContaining([
-                                expect.stringContaining('must be an email'),
-                            ]),
+                            issues: expect.arrayContaining([expect.stringContaining('must be an email')]),
                         }),
                     ]),
                 );
@@ -259,18 +221,13 @@ describe('Auth (e2e)', () => {
             it('should return 400 when password is too short', async () => {
                 const payload = { ...validPayload, password: '1234567' };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(400);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(400);
 
                 expect(response.body.error.details).toEqual(
                     expect.arrayContaining([
                         expect.objectContaining({
                             field: 'password',
-                            issues: expect.arrayContaining([
-                                expect.stringContaining('must be longer'),
-                            ]),
+                            issues: expect.arrayContaining([expect.stringContaining('must be longer')]),
                         }),
                     ]),
                 );
@@ -279,34 +236,22 @@ describe('Auth (e2e)', () => {
             it('should return 400 when password is too long', async () => {
                 const payload = { ...validPayload, password: 'a'.repeat(73) };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(400);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(400);
 
-                expect(response.body.error.details).toEqual(
-                    expect.arrayContaining([
-                        expect.objectContaining({ field: 'password' }),
-                    ]),
-                );
+                expect(response.body.error.details).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'password' })]));
             });
 
             it('should return 400 when unknown properties are present', async () => {
                 const payload = { ...validPayload, role: 'admin' };
 
-                const response = await request(app.getHttpServer())
-                    .post('/v1/auth/register')
-                    .send(payload)
-                    .expect(400);
+                const response = await request(app.getHttpServer()).post('/v1/auth/register').send(payload).expect(400);
 
                 expect(response.body.error.code).toBe('VALIDATION_ERROR');
                 expect(response.body.error.details).toEqual(
                     expect.arrayContaining([
                         expect.objectContaining({
                             field: 'role',
-                            issues: expect.arrayContaining([
-                                expect.stringContaining('should not exist'),
-                            ]),
+                            issues: expect.arrayContaining([expect.stringContaining('should not exist')]),
                         }),
                     ]),
                 );
@@ -331,9 +276,7 @@ describe('Auth (e2e)', () => {
                 }
 
                 const responses = await Promise.all(requests);
-                const tooManyRequests = responses.filter(
-                    (r) => r.status === 429,
-                );
+                const tooManyRequests = responses.filter((r) => r.status === 429);
 
                 // At least some requests should be rate limited
                 // (depends on your rate limit configuration)

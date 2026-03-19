@@ -68,10 +68,7 @@ describe('UsersService', () => {
             // Assert
             expect(prisma.user.findFirst).toHaveBeenCalledWith({
                 where: {
-                    OR: [
-                        { email: 'john@example.com' },
-                        { username: 'differentuser' },
-                    ],
+                    OR: [{ email: 'john@example.com' }, { username: 'differentuser' }],
                 },
             });
             expect(result).toEqual(mockUser);

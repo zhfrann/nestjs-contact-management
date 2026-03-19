@@ -5,12 +5,26 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 export class UsersService {
     constructor(private readonly prisma: PrismaService) {}
 
+    /**
+     * Finds a user by email or username.
+     * Used mainly during registration to detect duplicate credentials.
+     */
     async findByEmailOrUsername(params: { email: string; username: string }) {
         return await this.prisma.user.findFirst({
-            where: {
-                OR: [{ email: params.email }, { username: params.username }],
-            },
+            where: { OR: [{ email: params.email }, { username: params.username }] },
         });
+    }
+
+    async findByIdentifier(identifier: string) {
+        const normalizedIdentifier = identifier.includes('@') ? identifier.trim().toLowerCase() : identifier.trim();
+
+        return await this.prisma.user.findFirst({
+            where: { OR: [{ email: normalizedIdentifier }, { username: normalizedIdentifier }] },
+        });
+    }
+
+    async findById(id: string) {
+        return await this.prisma.user.findUnique({ where: { id: id } });
     }
 
     async createUser(data: { username: string; email: string; passwordHash: string; firstName: string; lastName?: string }) {
