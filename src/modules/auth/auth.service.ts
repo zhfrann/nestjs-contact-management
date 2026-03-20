@@ -116,4 +116,59 @@ export class AuthService {
             },
         };
     }
+
+    async refresh(refreshToken: string) {
+        const refreshTokenSecret = this.config.get<string>('JWT_REFRESH_SECRET');
+        const refreshTokenExpiresIn = (this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d') as StringValue;
+
+        let payload: RefreshTokenPayload;
+        try {
+            payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(refreshToken, {
+                secret: refreshTokenSecret,
+            });
+        } catch {
+            throw new UnauthorizedException({ i18nKey: I18N_KEYS.auth.error.refreshTokenInvalid });
+        }
+
+        const session = await this.prisma.authSession.findFirst({
+            where: { id: payload.sid, userId: payload.sub },
+        });
+        if (!session || session.revokedAt) {
+            throw new UnauthorizedException({ i18nKey: I18N_KEYS.auth.error.refreshTokenInvalid });
+        }
+        if (session.expiresAt.getTime() <= Date.now()) {
+            throw new UnauthorizedException({ i18nKey: I18N_KEYS.auth.error.refreshTokenInvalid });
+        }
+        if (session.refreshTokenHash !== sha256(refreshToken)) {
+            // token mismatch, revoke session for safety
+            await this.prisma.authSession.update({
+                where: { id: session.id },
+                data: { revokedAt: new Date() },
+            });
+            throw new UnauthorizedException({ i18nKey: I18N_KEYS.auth.error.refreshTokenInvalid });
+        }
+
+        // rotate refresh token
+        const newExpiresAt = computeExpiryDate(refreshTokenExpiresIn);
+        const newRefreshToken = await this.jwtService.signAsync(
+            { sid: payload.sid, sub: payload.sub },
+            { secret: refreshTokenSecret, expiresIn: refreshTokenExpiresIn },
+        );
+
+        await this.prisma.authSession.update({
+            where: { id: session.id },
+            data: {
+                refreshTokenHash: sha256(newRefreshToken),
+                expiresAt: newExpiresAt,
+            },
+        });
+
+        const accessTokenPayload: AccessTokenPayload = { sub: payload.sub };
+        const accessToken = await this.jwtService.signAsync(accessTokenPayload);
+
+        return {
+            accessToken: accessToken,
+            refreshToken: newRefreshToken,
+        };
+    }
 }
