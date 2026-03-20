@@ -8,6 +8,7 @@ describe('UsersService', () => {
     let prisma: {
         user: {
             findFirst: jest.Mock;
+            findUnique: jest.Mock;
             create: jest.Mock;
         };
     };
@@ -31,6 +32,7 @@ describe('UsersService', () => {
         prisma = {
             user: {
                 findFirst: jest.fn(),
+                findUnique: jest.fn(),
                 create: jest.fn(),
             },
         };
@@ -99,6 +101,63 @@ describe('UsersService', () => {
             });
 
             // Assert
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('findByIdentifier', () => {
+        it('should normalize email identifier by trimming and lowercasing', async () => {
+            prisma.user.findFirst.mockResolvedValue(mockUser);
+
+            const result = await service.findByIdentifier('  John@Example.COM  ');
+
+            expect(prisma.user.findFirst).toHaveBeenCalledWith({
+                where: {
+                    OR: [{ email: 'john@example.com' }, { username: 'john@example.com' }],
+                },
+            });
+            expect(result).toEqual(mockUser);
+        });
+
+        it('should normalize username identifier by trimming only', async () => {
+            prisma.user.findFirst.mockResolvedValue(mockUser);
+
+            const result = await service.findByIdentifier('  JohnDoe  ');
+
+            expect(prisma.user.findFirst).toHaveBeenCalledWith({
+                where: {
+                    OR: [{ email: 'JohnDoe' }, { username: 'JohnDoe' }],
+                },
+            });
+            expect(result).toEqual(mockUser);
+        });
+
+        it('should return null when identifier is not found', async () => {
+            prisma.user.findFirst.mockResolvedValue(null);
+
+            const result = await service.findByIdentifier('unknown_user');
+
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('findById', () => {
+        it('should find user by id', async () => {
+            prisma.user.findUnique.mockResolvedValue(mockUser);
+
+            const result = await service.findById('cuid_123');
+
+            expect(prisma.user.findUnique).toHaveBeenCalledWith({
+                where: { id: 'cuid_123' },
+            });
+            expect(result).toEqual(mockUser);
+        });
+
+        it('should return null when id is not found', async () => {
+            prisma.user.findUnique.mockResolvedValue(null);
+
+            const result = await service.findById('unknown_id');
+
             expect(result).toBeNull();
         });
     });
