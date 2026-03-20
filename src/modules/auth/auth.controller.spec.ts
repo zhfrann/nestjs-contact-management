@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { UnauthorizedException } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -7,12 +8,14 @@ import { UserStatus } from 'src/generated/prisma/enums';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { REFRESH_COOKIE_NAME } from 'src/common/constants/refresh-cookie.constant';
+import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
 
 describe('AuthController', () => {
     let controller: AuthController;
     let authService: {
         register: jest.Mock;
         login: jest.Mock;
+        refresh: jest.Mock;
     };
     let configService: {
         get: jest.Mock;
@@ -40,10 +43,16 @@ describe('AuthController', () => {
         user: mockUser,
     };
 
+    const mockRefreshResponse = {
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+    };
+
     beforeEach(async () => {
         authService = {
             register: jest.fn(),
             login: jest.fn(),
+            refresh: jest.fn(),
         };
 
         configService = {
@@ -192,6 +201,102 @@ describe('AuthController', () => {
             authService.login.mockRejectedValue(new Error('Login failed'));
 
             await expect(controller.login(loginDto, req as Request, res as Response)).rejects.toThrow('Login failed');
+            expect(res.cookie as jest.Mock).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('refresh', () => {
+        function createMockRequest(userAgent?: string, ip = '127.0.0.1', cookies: Record<string, string> = {}) {
+            return {
+                get: jest.fn().mockImplementation((header: string) => {
+                    if (header === 'user-agent') return userAgent;
+                    return undefined;
+                }),
+                ip,
+                cookies,
+            } as Partial<Request>;
+        }
+
+        function createMockResponse() {
+            return {
+                cookie: jest.fn(),
+            } as Partial<Response>;
+        }
+
+        it('should throw UnauthorizedException when refresh token cookie is missing', async () => {
+            const req = createMockRequest(undefined, '127.0.0.1', {});
+            const res = createMockResponse();
+
+            await expect(controller.refresh(req as Request, res as Response)).rejects.toThrow(UnauthorizedException);
+
+            try {
+                await controller.refresh(req as Request, res as Response);
+            } catch (error) {
+                expect(error).toBeInstanceOf(UnauthorizedException);
+                const response = (error as UnauthorizedException).getResponse();
+                expect(response).toEqual({
+                    i18nKey: I18N_KEYS.auth.error.refreshTokenMissing,
+                });
+            }
+
+            expect(authService.refresh).not.toHaveBeenCalled();
+            expect(res.cookie as jest.Mock).not.toHaveBeenCalled();
+        });
+
+        it('should call authService.refresh, rotate cookie, and return access token', async () => {
+            const req = createMockRequest(undefined, '127.0.0.1', {
+                [REFRESH_COOKIE_NAME]: 'old-refresh-token',
+            });
+            const res = createMockResponse();
+
+            authService.refresh.mockResolvedValue(mockRefreshResponse);
+            configService.get.mockReturnValue('production');
+
+            const result = await controller.refresh(req as Request, res as Response);
+
+            expect(authService.refresh).toHaveBeenCalledWith('old-refresh-token');
+
+            expect(res.cookie as jest.Mock).toHaveBeenCalledWith(REFRESH_COOKIE_NAME, 'new-refresh-token', {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                path: '/v1/auth',
+            });
+
+            expect(result).toEqual({
+                accessToken: 'new-access-token',
+            });
+        });
+
+        it('should set secure=false when NODE_ENV is not production', async () => {
+            const req = createMockRequest(undefined, '127.0.0.1', {
+                [REFRESH_COOKIE_NAME]: 'old-refresh-token',
+            });
+            const res = createMockResponse();
+
+            authService.refresh.mockResolvedValue(mockRefreshResponse);
+            configService.get.mockReturnValue('development');
+
+            await controller.refresh(req as Request, res as Response);
+
+            expect(res.cookie as jest.Mock).toHaveBeenCalledWith(
+                REFRESH_COOKIE_NAME,
+                'new-refresh-token',
+                expect.objectContaining({
+                    secure: false,
+                }),
+            );
+        });
+
+        it('should propagate errors from authService.refresh', async () => {
+            const req = createMockRequest(undefined, '127.0.0.1', {
+                [REFRESH_COOKIE_NAME]: 'old-refresh-token',
+            });
+            const res = createMockResponse();
+
+            authService.refresh.mockRejectedValue(new Error('Refresh failed'));
+
+            await expect(controller.refresh(req as Request, res as Response)).rejects.toThrow('Refresh failed');
             expect(res.cookie as jest.Mock).not.toHaveBeenCalled();
         });
     });

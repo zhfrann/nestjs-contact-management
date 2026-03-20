@@ -44,4 +44,29 @@ export class AuthController {
             user: result.user,
         };
     }
+
+    @Post('refresh')
+    @ResponseMessage(I18N_KEYS.auth.response.refreshSuccess)
+    async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+        const cookieName = REFRESH_COOKIE_NAME;
+        const refreshToken = req.cookies?.[cookieName] as string | undefined;
+
+        if (!refreshToken) {
+            throw new (await import('@nestjs/common')).UnauthorizedException({
+                i18nKey: I18N_KEYS.auth.error.refreshTokenMissing,
+            });
+        }
+
+        const result = await this.authService.refresh(refreshToken);
+
+        // rotate cookie
+        res.cookie(cookieName, result.refreshToken, {
+            httpOnly: true,
+            secure: this.config.get<string>('NODE_ENV') === 'production',
+            sameSite: 'lax',
+            path: '/v1/auth', // Endpoint refresh + logout can also get cookies
+        });
+
+        return { accessToken: result.accessToken };
+    }
 }

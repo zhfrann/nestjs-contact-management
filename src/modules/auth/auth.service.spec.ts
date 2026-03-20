@@ -25,10 +25,12 @@ describe('AuthService', () => {
         authSession: {
             create: jest.Mock;
             update: jest.Mock;
+            findFirst: jest.Mock;
         };
     };
     let jwtService: {
         signAsync: jest.Mock;
+        verifyAsync: jest.Mock;
     };
     let configService: {
         get: jest.Mock;
@@ -68,11 +70,13 @@ describe('AuthService', () => {
             authSession: {
                 create: jest.fn(),
                 update: jest.fn(),
+                findFirst: jest.fn(),
             },
         };
 
         jwtService = {
             signAsync: jest.fn(),
+            verifyAsync: jest.fn(),
         };
 
         configService = {
@@ -369,6 +373,186 @@ describe('AuthService', () => {
 
             await expect(service.login(mockLoginInput)).rejects.toThrow('JWT signing failed');
             expect(prisma.authSession.update).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('refresh', () => {
+        const refreshToken = 'valid-refresh-token';
+        const refreshPayload = {
+            sub: mockUser.id,
+            sid: 'session_123',
+        };
+
+        const activeSession = {
+            id: 'session_123',
+            userId: mockUser.id,
+            refreshTokenHash: sha256(refreshToken),
+            userAgent: 'Mozilla/5.0',
+            ipAddress: '127.0.0.1',
+            expiresAt: new Date('2026-03-27T00:00:00.000Z'),
+            revokedAt: null,
+        };
+
+        beforeEach(() => {
+            jest.useFakeTimers();
+            jest.setSystemTime(new Date('2026-03-20T00:00:00.000Z'));
+
+            configService.get.mockImplementation((key: string) => {
+                switch (key) {
+                    case 'JWT_REFRESH_SECRET':
+                        return 'refresh-secret';
+                    case 'JWT_REFRESH_EXPIRES_IN':
+                        return '7d';
+                    default:
+                        return undefined;
+                }
+            });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('should refresh successfully, rotate refresh token, and return new access token', async () => {
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.findFirst.mockResolvedValue(activeSession);
+            jwtService.signAsync.mockResolvedValueOnce('rotated-refresh-token').mockResolvedValueOnce('new-access-token');
+
+            const result = await service.refresh(refreshToken);
+
+            expect(jwtService.verifyAsync).toHaveBeenCalledWith(refreshToken, {
+                secret: 'refresh-secret',
+            });
+
+            expect(prisma.authSession.findFirst).toHaveBeenCalledWith({
+                where: {
+                    id: 'session_123',
+                    userId: mockUser.id,
+                },
+            });
+
+            expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+                1,
+                { sid: 'session_123', sub: mockUser.id },
+                {
+                    secret: 'refresh-secret',
+                    expiresIn: '7d',
+                },
+            );
+
+            expect(prisma.authSession.update).toHaveBeenCalledWith({
+                where: { id: 'session_123' },
+                data: {
+                    refreshTokenHash: sha256('rotated-refresh-token'),
+                    expiresAt: expect.any(Date),
+                },
+            });
+
+            expect(jwtService.signAsync).toHaveBeenNthCalledWith(2, {
+                sub: mockUser.id,
+            });
+
+            expect(result).toEqual({
+                accessToken: 'new-access-token',
+                refreshToken: 'rotated-refresh-token',
+            });
+        });
+
+        it('should throw UnauthorizedException when refresh token verification fails', async () => {
+            jwtService.verifyAsync.mockRejectedValue(new Error('invalid token'));
+
+            await expect(service.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
+
+            try {
+                await service.refresh(refreshToken);
+            } catch (error) {
+                expect(error).toBeInstanceOf(UnauthorizedException);
+                const response = (error as UnauthorizedException).getResponse();
+                expect(response).toEqual({
+                    i18nKey: I18N_KEYS.auth.error.refreshTokenInvalid,
+                });
+            }
+
+            expect(prisma.authSession.findFirst).not.toHaveBeenCalled();
+            expect(prisma.authSession.update).not.toHaveBeenCalled();
+        });
+
+        it('should throw UnauthorizedException when session is not found', async () => {
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.findFirst.mockResolvedValue(null);
+
+            await expect(service.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
+
+            expect(prisma.authSession.update).not.toHaveBeenCalled();
+        });
+
+        it('should throw UnauthorizedException when session is revoked', async () => {
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.findFirst.mockResolvedValue({
+                ...activeSession,
+                revokedAt: new Date('2026-03-19T00:00:00.000Z'),
+            });
+
+            await expect(service.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
+
+            expect(prisma.authSession.update).not.toHaveBeenCalled();
+        });
+
+        it('should throw UnauthorizedException when session is expired', async () => {
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.findFirst.mockResolvedValue({
+                ...activeSession,
+                expiresAt: new Date('2026-03-19T00:00:00.000Z'),
+            });
+
+            await expect(service.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
+
+            expect(prisma.authSession.update).not.toHaveBeenCalled();
+        });
+
+        it('should revoke session and throw UnauthorizedException when token hash mismatches', async () => {
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.findFirst.mockResolvedValue({
+                ...activeSession,
+                refreshTokenHash: sha256('different-token'),
+            });
+
+            await expect(service.refresh(refreshToken)).rejects.toThrow(UnauthorizedException);
+
+            expect(prisma.authSession.update).toHaveBeenCalledWith({
+                where: { id: 'session_123' },
+                data: { revokedAt: expect.any(Date) },
+            });
+
+            expect(jwtService.signAsync).not.toHaveBeenCalled();
+        });
+
+        it('should fallback to 7d when JWT_REFRESH_EXPIRES_IN is not set', async () => {
+            configService.get.mockImplementation((key: string) => {
+                switch (key) {
+                    case 'JWT_REFRESH_SECRET':
+                        return 'refresh-secret';
+                    case 'JWT_REFRESH_EXPIRES_IN':
+                        return undefined;
+                    default:
+                        return undefined;
+                }
+            });
+
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.findFirst.mockResolvedValue(activeSession);
+            jwtService.signAsync.mockResolvedValueOnce('rotated-refresh-token').mockResolvedValueOnce('new-access-token');
+
+            await service.refresh(refreshToken);
+
+            expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+                1,
+                { sid: 'session_123', sub: mockUser.id },
+                {
+                    secret: 'refresh-secret',
+                    expiresIn: '7d',
+                },
+            );
         });
     });
 });
