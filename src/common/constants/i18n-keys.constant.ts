@@ -63,4 +63,13 @@ export const I18N_KEYS = {
             refreshTokenInvalid: 'auth.error.refreshTokenInvalid',
         },
     },
+    users: {
+        response: {
+            profileUpdateSuccess: 'users.response.profileUpdateSuccess',
+        },
+        error: {
+            emailTaken: 'users.error.emailTaken',
+            usernameTaken: 'users.error.usernameTaken',
+        },
+    },
 } as const;

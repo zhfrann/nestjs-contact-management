@@ -1,0 +1,9 @@
+{
+    "response": {
+        "profileUpdateSuccess": "Profile updated successfully"
+    },
+    "error": {
+        "emailTaken": "Email is already taken",
+        "usernameTaken": "Username is already taken"
+    }
+}
