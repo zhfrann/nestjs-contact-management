@@ -18,7 +18,7 @@ export class AuthService {
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
-    ) { }
+    ) {}
 
     async register(request: RegisterRequest): Promise<RegisterResponse> {
         // Duplicate check

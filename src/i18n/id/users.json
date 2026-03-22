@@ -1,0 +1,9 @@
+{
+    "response": {
+        "profileUpdateSuccess": "Profil berhasil diperbarui"
+    },
+    "error": {
+        "emailTaken": "Email sudah digunakan",
+        "usernameTaken": "Username sudah digunakan"
+    }
+}
