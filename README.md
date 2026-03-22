@@ -7,7 +7,7 @@ A RESTful API for managing contacts built with NestJS, Prisma ORM, and MariaDB/M
 
 ## Project Status
 
-This project is currently in the setup phase. The core infrastructure has been configured, but business logic for contact management has not yet been implemented.
+This project is currently in progress. The core infrastructure has been configured, but business logic for contact management has not been fully implemented yet.
 
 ## Table of Contents
 
