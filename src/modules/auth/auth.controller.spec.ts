@@ -16,6 +16,7 @@ describe('AuthController', () => {
         register: jest.Mock;
         login: jest.Mock;
         refresh: jest.Mock;
+        logout: jest.Mock;
     };
     let configService: {
         get: jest.Mock;
@@ -53,6 +54,7 @@ describe('AuthController', () => {
             register: jest.fn(),
             login: jest.fn(),
             refresh: jest.fn(),
+            logout: jest.fn(),
         };
 
         configService = {
@@ -298,6 +300,101 @@ describe('AuthController', () => {
 
             await expect(controller.refresh(req as Request, res as Response)).rejects.toThrow('Refresh failed');
             expect(res.cookie as jest.Mock).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('logout', () => {
+        function createMockRequest(userAgent?: string, ip = '127.0.0.1', cookies: Record<string, string> = {}) {
+            return {
+                get: jest.fn().mockImplementation((header: string) => {
+                    if (header === 'user-agent') return userAgent;
+                    return undefined;
+                }),
+                ip,
+                cookies,
+            } as Partial<Request>;
+        }
+
+        function createMockResponse() {
+            return {
+                cookie: jest.fn(),
+                clearCookie: jest.fn(),
+            } as Partial<Response>;
+        }
+
+        it('should call authService.logout, clear cookie, and return ok when refresh token exists', async () => {
+            const req = createMockRequest(undefined, '127.0.0.1', {
+                [REFRESH_COOKIE_NAME]: 'refresh-token',
+            });
+            const res = createMockResponse();
+
+            authService.logout.mockResolvedValue(undefined);
+            configService.get.mockReturnValue('production');
+
+            const result = await controller.logout(req as Request, res as Response);
+
+            expect(authService.logout).toHaveBeenCalledWith('refresh-token');
+            expect(authService.logout).toHaveBeenCalledTimes(1);
+
+            expect(res.clearCookie as jest.Mock).toHaveBeenCalledWith(REFRESH_COOKIE_NAME, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                path: '/v1/auth',
+            });
+
+            expect(result).toEqual({ ok: true });
+        });
+
+        it('should not call authService.logout when refresh token cookie is missing', async () => {
+            const req = createMockRequest(undefined, '127.0.0.1', {});
+            const res = createMockResponse();
+
+            configService.get.mockReturnValue('production');
+
+            const result = await controller.logout(req as Request, res as Response);
+
+            expect(authService.logout).not.toHaveBeenCalled();
+
+            expect(res.clearCookie as jest.Mock).toHaveBeenCalledWith(REFRESH_COOKIE_NAME, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                path: '/v1/auth',
+            });
+
+            expect(result).toEqual({ ok: true });
+        });
+
+        it('should set secure=false when NODE_ENV is not production', async () => {
+            const req = createMockRequest(undefined, '127.0.0.1', {
+                [REFRESH_COOKIE_NAME]: 'refresh-token',
+            });
+            const res = createMockResponse();
+
+            authService.logout.mockResolvedValue(undefined);
+            configService.get.mockReturnValue('development');
+
+            await controller.logout(req as Request, res as Response);
+
+            expect(res.clearCookie as jest.Mock).toHaveBeenCalledWith(
+                REFRESH_COOKIE_NAME,
+                expect.objectContaining({
+                    secure: false,
+                }),
+            );
+        });
+
+        it('should propagate errors from authService.logout', async () => {
+            const req = createMockRequest(undefined, '127.0.0.1', {
+                [REFRESH_COOKIE_NAME]: 'refresh-token',
+            });
+            const res = createMockResponse();
+
+            authService.logout.mockRejectedValue(new Error('Logout failed'));
+
+            await expect(controller.logout(req as Request, res as Response)).rejects.toThrow('Logout failed');
+            expect(res.clearCookie as jest.Mock).not.toHaveBeenCalled();
         });
     });
 });

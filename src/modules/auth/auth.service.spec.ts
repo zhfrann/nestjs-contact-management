@@ -26,6 +26,7 @@ describe('AuthService', () => {
             create: jest.Mock;
             update: jest.Mock;
             findFirst: jest.Mock;
+            updateMany: jest.Mock;
         };
     };
     let jwtService: {
@@ -71,6 +72,7 @@ describe('AuthService', () => {
                 create: jest.fn(),
                 update: jest.fn(),
                 findFirst: jest.fn(),
+                updateMany: jest.fn(),
             },
         };
 
@@ -553,6 +555,87 @@ describe('AuthService', () => {
                     expiresIn: '7d',
                 },
             );
+        });
+    });
+
+    describe('logout', () => {
+        const refreshToken = 'valid-refresh-token';
+        const refreshPayload = {
+            sub: mockUser.id,
+            sid: 'session_123',
+        };
+
+        beforeEach(() => {
+            configService.get.mockImplementation((key: string) => {
+                switch (key) {
+                    case 'JWT_REFRESH_SECRET':
+                        return 'refresh-secret';
+                    default:
+                        return undefined;
+                }
+            });
+        });
+
+        it('should revoke session when refresh token is valid', async () => {
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.updateMany.mockResolvedValue({ count: 1 });
+
+            const result = await service.logout(refreshToken);
+
+            expect(jwtService.verifyAsync).toHaveBeenCalledWith(refreshToken, {
+                secret: 'refresh-secret',
+            });
+
+            expect(prisma.authSession.updateMany).toHaveBeenCalledWith({
+                where: {
+                    id: 'session_123',
+                    userId: mockUser.id,
+                    revokedAt: null,
+                },
+                data: {
+                    revokedAt: expect.any(Date),
+                },
+            });
+
+            expect(result).toBeUndefined();
+        });
+
+        it('should return silently when refresh token is invalid', async () => {
+            jwtService.verifyAsync.mockRejectedValue(new Error('invalid token'));
+
+            const result = await service.logout(refreshToken);
+
+            expect(jwtService.verifyAsync).toHaveBeenCalledWith(refreshToken, {
+                secret: 'refresh-secret',
+            });
+            expect(prisma.authSession.updateMany).not.toHaveBeenCalled();
+            expect(result).toBeUndefined();
+        });
+
+        it('should remain idempotent when no active session is updated', async () => {
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.updateMany.mockResolvedValue({ count: 0 });
+
+            const result = await service.logout(refreshToken);
+
+            expect(prisma.authSession.updateMany).toHaveBeenCalledWith({
+                where: {
+                    id: 'session_123',
+                    userId: mockUser.id,
+                    revokedAt: null,
+                },
+                data: {
+                    revokedAt: expect.any(Date),
+                },
+            });
+            expect(result).toBeUndefined();
+        });
+
+        it('should propagate database errors from updateMany', async () => {
+            jwtService.verifyAsync.mockResolvedValue(refreshPayload);
+            prisma.authSession.updateMany.mockRejectedValue(new Error('Database error'));
+
+            await expect(service.logout(refreshToken)).rejects.toThrow('Database error');
         });
     });
 });

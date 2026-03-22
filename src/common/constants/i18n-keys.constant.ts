@@ -53,7 +53,7 @@ export const I18N_KEYS = {
             registerSuccess: 'auth.response.registerSuccess',
             loginSuccess: 'auth.response.loginSuccess',
             refreshSuccess: 'auth.response.refreshSuccess',
-            logoutSuccess: 'auth.response.logooutSuccess',
+            logoutSuccess: 'auth.response.logoutSuccess',
         },
         error: {
             emailTaken: 'auth.error.emailTaken',
