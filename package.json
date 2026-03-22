@@ -1,6 +1,6 @@
 {
     "name": "nestjs-contact-management",
-    "version": "0.0.2",
+    "version": "0.1.0",
     "description": "A RESTful contact management API built with NestJS, Prisma, and MariaDB or MySQL.",
     "author": "Muhammad Zhafran Ilham <muh.zhafranilham@gmail.com>",
     "type": "commonjs",
