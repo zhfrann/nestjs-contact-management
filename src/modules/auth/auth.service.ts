@@ -18,7 +18,7 @@ export class AuthService {
         private readonly prisma: PrismaService,
         private readonly jwtService: JwtService,
         private readonly config: ConfigService,
-    ) {}
+    ) { }
 
     async register(request: RegisterRequest): Promise<RegisterResponse> {
         // Duplicate check
@@ -102,7 +102,7 @@ export class AuthService {
 
         return {
             accessToken: accessToken,
-            refreshToken: refreshToken, // Auth Controller that will set the cookie
+            refreshToken: refreshToken, // Auth Controller that will set the cookie using Express Response Object
             user: {
                 id: user.id,
                 username: user.username,
@@ -170,5 +170,24 @@ export class AuthService {
             accessToken: accessToken,
             refreshToken: newRefreshToken,
         };
+    }
+
+    async logout(refreshToken: string) {
+        const refreshTokenSecret = this.config.get<string>('JWT_REFRESH_SECRET');
+
+        let payload: RefreshTokenPayload;
+        try {
+            payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(refreshToken, {
+                secret: refreshTokenSecret,
+            });
+        } catch {
+            // logout idempotent, if token is invalid it means the session is already revoked / user already logout
+            return;
+        }
+
+        await this.prisma.authSession.updateMany({
+            where: { id: payload.sid, userId: payload.sub, revokedAt: null },
+            data: { revokedAt: new Date() },
+        });
     }
 }

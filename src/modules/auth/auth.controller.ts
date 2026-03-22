@@ -69,4 +69,25 @@ export class AuthController {
 
         return { accessToken: result.accessToken };
     }
+
+    @Post('logout')
+    @ResponseMessage(I18N_KEYS.auth.response.logoutSuccess)
+    async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+        const cookieName = REFRESH_COOKIE_NAME;
+        const refreshToken = req.cookies?.[cookieName] as string | undefined;
+
+        if (refreshToken) {
+            await this.authService.logout(refreshToken);
+        }
+
+        // clear cookie
+        res.clearCookie(cookieName, {
+            httpOnly: true,
+            secure: this.config.get<string>('NODE_ENV') === 'production',
+            sameSite: 'lax',
+            path: '/v1/auth',
+        });
+
+        return { ok: true };
+    }
 }
