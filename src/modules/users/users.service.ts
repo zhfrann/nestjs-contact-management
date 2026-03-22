@@ -66,7 +66,7 @@ export class UsersService {
             throw new NotFoundException({ i18nKey: I18N_KEYS.error.notFound });
         }
 
-        // check for conlifcting username or email
+        // check for conlifcting username or email with other user
         if (input.email && input.email !== existingUser.email) {
             const emailUsed = await this.prisma.user.findUnique({ where: { email: input.email } });
             if (emailUsed) {
