@@ -72,4 +72,12 @@ export const I18N_KEYS = {
             usernameTaken: 'users.error.usernameTaken',
         },
     },
+    contacts: {
+        response: {
+            createSuccess: 'contacts.response.createSuccess',
+        },
+        error: {
+            conflict: 'contacts.error.conflict',
+        },
+    },
 } as const;

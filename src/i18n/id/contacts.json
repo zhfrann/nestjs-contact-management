@@ -1,0 +1,8 @@
+{
+    "response": {
+        "createSuccess": "Berhasil membuat kontak baru"
+    },
+    "error": {
+        "conflict": "Nomor telepon sudah terdaftar"
+    }
+}
