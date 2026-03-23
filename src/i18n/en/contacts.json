@@ -1,0 +1,8 @@
+{
+    "response": {
+        "createSuccess": "Contact created successfully"
+    },
+    "error": {
+        "conflict": "Phone number already exists"
+    }
+}

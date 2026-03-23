@@ -17,6 +17,9 @@ import { RATE_LIMIT_POLICY } from './common/rate-limit/rate-limit.policy';
 import { resolveI18nPath } from './common/utils/i18n-path-resolver.util';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { ContactsService } from './modules/contacts/contacts.service';
+import { ContactsController } from './modules/contacts/contacts.controller';
+import { ContactsModule } from './modules/contacts/contacts.module';
 
 @Module({
     imports: [
@@ -59,8 +62,9 @@ import { UsersModule } from './modules/users/users.module';
         HealthModule,
         AuthModule,
         UsersModule,
+        ContactsModule,
     ],
-    controllers: [AppController],
+    controllers: [AppController, ContactsController],
     providers: [
         AppService,
         {
@@ -79,6 +83,7 @@ import { UsersModule } from './modules/users/users.module';
             provide: APP_GUARD,
             useClass: ThrottlerGuard,
         },
+        ContactsService,
     ],
 })
 export class AppModule implements NestModule {
