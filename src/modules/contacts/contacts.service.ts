@@ -4,7 +4,7 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 
 @Injectable()
 export class ContactsService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) {}
 
     async create(userId: string, input: { firstName: string; lastName?: string; email?: string; phone: string; notes?: string }) {
         // check for duplicate phone number per user
