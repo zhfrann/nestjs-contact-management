@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 
@@ -28,5 +28,61 @@ export class ContactsService {
         });
 
         return contact;
+    }
+
+    /**
+     * Find a contact by contactId and userId
+     * @param userId Contact owner's userId
+     * @param contactId
+     * @returns the contact if found
+     * @throws `NotFoundException` if contact is not found
+     */
+    async findByIdOrThrow(userId: string, contactId: string) {
+        const contact = await this.prisma.contact.findFirst({
+            where: { id: contactId, ownerId: userId, deletedAt: null },
+        });
+
+        if (!contact) {
+            throw new NotFoundException({ i18nKey: I18N_KEYS.contacts.error.notFound });
+        }
+        return contact;
+    }
+
+    async update(
+        userId: string,
+        contactId: string,
+        input: Partial<{
+            firstName: string;
+            lastName: string;
+            email: string;
+            phone: string;
+            notes: string;
+            isFavorite: boolean;
+        }>,
+    ) {
+        await this.findByIdOrThrow(userId, contactId);
+
+        // If a new phone number is provided, check for duplicate
+        if (input.phone) {
+            const duplicateNumber = await this.prisma.contact.findFirst({
+                where: { ownerId: userId, phone: input.phone, deletedAt: null, NOT: { id: contactId } },
+            });
+            if (duplicateNumber) {
+                throw new ConflictException({ i18nKey: I18N_KEYS.contacts.error.conflict });
+            }
+        }
+
+        // Update the contact
+        return this.prisma.contact.update({
+            where: { id: contactId },
+            data: {
+                firstName: input.firstName ?? undefined,
+                lastName: input.lastName ?? undefined,
+                email: input.email ?? undefined,
+                phone: input.phone ?? undefined,
+                notes: input.notes ?? undefined,
+                isFavorite: input.isFavorite ?? undefined,
+            },
+        });
     }
 }

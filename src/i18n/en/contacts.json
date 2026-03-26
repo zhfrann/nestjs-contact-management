@@ -1,8 +1,10 @@
 {
     "response": {
-        "createSuccess": "Contact created successfully"
+        "createSuccess": "Contact created successfully",
+        "updateSuccess": "Contact update successfully"
     },
     "error": {
-        "conflict": "Phone number already exists"
+        "conflict": "Phone number already exists",
+        "notFound": "Contact not found"
     }
 }
