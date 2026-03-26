@@ -1,8 +1,10 @@
 {
     "response": {
-        "createSuccess": "Berhasil membuat kontak baru"
+        "createSuccess": "Berhasil membuat kontak baru",
+        "updateSuccess": "Berhasil memperbarui kontak"
     },
     "error": {
-        "conflict": "Nomor telepon sudah terdaftar"
+        "conflict": "Nomor telepon sudah terdaftar",
+        "notFound": "Kontak tidak ditemukan"
     }
 }
