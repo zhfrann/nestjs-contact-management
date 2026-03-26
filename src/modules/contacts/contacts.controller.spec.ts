@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
+import { UpdateContactDto } from './dto/update-contact.dto';
 
 describe('ContactsController', () => {
     let controller: ContactsController;
     let contactsService: {
         create: jest.Mock;
+        update: jest.Mock;
     };
 
     const mockCreatedContact = {
@@ -17,6 +19,7 @@ describe('ContactsController', () => {
         email: 'john@example.com',
         phone: '081234567890',
         notes: 'School friend',
+        isFavorite: false,
         createdAt: new Date('2024-01-01T00:00:00.000Z'),
         updatedAt: new Date('2024-01-01T00:00:00.000Z'),
         deletedAt: null,
@@ -25,6 +28,7 @@ describe('ContactsController', () => {
     beforeEach(async () => {
         contactsService = {
             create: jest.fn(),
+            update: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -95,6 +99,61 @@ describe('ContactsController', () => {
             contactsService.create.mockRejectedValue(new Error('Service error'));
 
             await expect(controller.create({ userId: 'user_123' }, dto)).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('update', () => {
+        it('should call contactsService.update with current user id, contact id, and dto', async () => {
+            const dto: UpdateContactDto = {
+                firstName: 'Johnny',
+                phone: '089999999999',
+                isFavorite: true,
+            };
+
+            const updatedContact = {
+                ...mockCreatedContact,
+                firstName: 'Johnny',
+                phone: '089999999999',
+                isFavorite: true,
+                updatedAt: new Date('2024-02-01T00:00:00.000Z'),
+            };
+
+            contactsService.update.mockResolvedValue(updatedContact);
+
+            const result = await controller.update({ userId: 'user_123' }, 'contact_123', dto);
+
+            expect(contactsService.update).toHaveBeenCalledWith('user_123', 'contact_123', dto);
+            expect(contactsService.update).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(updatedContact);
+        });
+
+        it('should support partial update dto', async () => {
+            const dto: UpdateContactDto = {
+                isFavorite: true,
+            };
+
+            const updatedContact = {
+                ...mockCreatedContact,
+                isFavorite: true,
+                updatedAt: new Date('2024-02-01T00:00:00.000Z'),
+            };
+
+            contactsService.update.mockResolvedValue(updatedContact);
+
+            const result = await controller.update({ userId: 'user_123' }, 'contact_123', dto);
+
+            expect(contactsService.update).toHaveBeenCalledWith('user_123', 'contact_123', dto);
+            expect(result).toEqual(updatedContact);
+        });
+
+        it('should propagate errors from contactsService.update', async () => {
+            const dto: UpdateContactDto = {
+                phone: '089999999999',
+            };
+
+            contactsService.update.mockRejectedValue(new Error('Service error'));
+
+            await expect(controller.update({ userId: 'user_123' }, 'contact_123', dto)).rejects.toThrow('Service error');
         });
     });
 });
