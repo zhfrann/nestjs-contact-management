@@ -48,6 +48,10 @@ export class ContactsService {
         return contact;
     }
 
+    async get(userId: string, contactId: string) {
+        return await this.findByIdOrThrow(userId, contactId);
+    }
+
     async update(
         userId: string,
         contactId: string,

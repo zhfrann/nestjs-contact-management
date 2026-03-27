@@ -75,6 +75,7 @@ export const I18N_KEYS = {
     contacts: {
         response: {
             createSuccess: 'contacts.response.createSuccess',
+            getContactSuccess: 'contacts.response.getContactSuccess',
             updateSuccess: 'contacts.response.updateSuccess',
         },
         error: {

@@ -8,6 +8,7 @@ describe('ContactsController', () => {
     let controller: ContactsController;
     let contactsService: {
         create: jest.Mock;
+        get: jest.Mock;
         update: jest.Mock;
     };
 
@@ -28,6 +29,7 @@ describe('ContactsController', () => {
     beforeEach(async () => {
         contactsService = {
             create: jest.fn(),
+            get: jest.fn(),
             update: jest.fn(),
         };
 
@@ -99,6 +101,24 @@ describe('ContactsController', () => {
             contactsService.create.mockRejectedValue(new Error('Service error'));
 
             await expect(controller.create({ userId: 'user_123' }, dto)).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('get', () => {
+        it('should call contactsService.get with current user id and contact id', async () => {
+            contactsService.get.mockResolvedValue(mockCreatedContact);
+
+            const result = await controller.get({ userId: 'user_123' }, 'contact_123');
+
+            expect(contactsService.get).toHaveBeenCalledWith('user_123', 'contact_123');
+            expect(contactsService.get).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(mockCreatedContact);
+        });
+
+        it('should propagate errors from contactsService.get', async () => {
+            contactsService.get.mockRejectedValue(new Error('Service error'));
+
+            await expect(controller.get({ userId: 'user_123' }, 'missing_contact')).rejects.toThrow('Service error');
         });
     });
 
