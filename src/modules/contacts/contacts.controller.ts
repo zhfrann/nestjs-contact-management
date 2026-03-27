@@ -10,7 +10,7 @@ import { UpdateContactDto } from './dto/update-contact.dto';
 @Controller({ path: 'contacts', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class ContactsController {
-    constructor(private readonly contactsService: ContactsService) { }
+    constructor(private readonly contactsService: ContactsService) {}
 
     @Post()
     @ResponseMessage(I18N_KEYS.contacts.response.createSuccess)
