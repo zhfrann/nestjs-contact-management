@@ -77,6 +77,7 @@ export const I18N_KEYS = {
             createSuccess: 'contacts.response.createSuccess',
             getContactSuccess: 'contacts.response.getContactSuccess',
             updateSuccess: 'contacts.response.updateSuccess',
+            deleteSuccess: 'contacts.response.deleteSuccess',
         },
         error: {
             conflict: 'contacts.error.conflict',

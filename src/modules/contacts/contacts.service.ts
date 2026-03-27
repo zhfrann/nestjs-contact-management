@@ -89,4 +89,14 @@ export class ContactsService {
             },
         });
     }
+
+    async remove(userId: string, contactId: string) {
+        await this.findByIdOrThrow(userId, contactId);
+
+        // soft delete
+        await this.prisma.contact.update({
+            where: { id: contactId },
+            data: { deletedAt: new Date() },
+        });
+    }
 }

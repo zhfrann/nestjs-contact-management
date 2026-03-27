@@ -10,6 +10,7 @@ describe('ContactsController', () => {
         create: jest.Mock;
         get: jest.Mock;
         update: jest.Mock;
+        remove: jest.Mock;
     };
 
     const mockCreatedContact = {
@@ -31,6 +32,7 @@ describe('ContactsController', () => {
             create: jest.fn(),
             get: jest.fn(),
             update: jest.fn(),
+            remove: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -174,6 +176,24 @@ describe('ContactsController', () => {
             contactsService.update.mockRejectedValue(new Error('Service error'));
 
             await expect(controller.update({ userId: 'user_123' }, 'contact_123', dto)).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('remove', () => {
+        it('should call contactsService.remove with current user id and contact id, then return ok', async () => {
+            contactsService.remove.mockResolvedValue(undefined);
+
+            const result = await controller.remove({ userId: 'user_123' }, 'contact_123');
+
+            expect(contactsService.remove).toHaveBeenCalledWith('user_123', 'contact_123');
+            expect(contactsService.remove).toHaveBeenCalledTimes(1);
+            expect(result).toEqual({ ok: true });
+        });
+
+        it('should propagate errors from contactsService.remove', async () => {
+            contactsService.remove.mockRejectedValue(new Error('Service error'));
+
+            await expect(controller.remove({ userId: 'user_123' }, 'missing_contact')).rejects.toThrow('Service error');
         });
     });
 });
