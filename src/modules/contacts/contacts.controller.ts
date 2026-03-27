@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
@@ -16,6 +16,12 @@ export class ContactsController {
     @ResponseMessage(I18N_KEYS.contacts.response.createSuccess)
     create(@CurrentUser() user: { userId: string }, @Body() dto: CreateContactDto) {
         return this.contactsService.create(user.userId, dto);
+    }
+
+    @Get(':id')
+    @ResponseMessage(I18N_KEYS.contacts.response.getContactSuccess)
+    get(@CurrentUser() user: { userId: string }, @Param('id') id: string) {
+        return this.contactsService.get(user.userId, id);
     }
 
     @Patch(':id')

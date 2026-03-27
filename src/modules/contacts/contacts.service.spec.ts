@@ -196,6 +196,25 @@ describe('ContactsService', () => {
         });
     });
 
+    describe('get', () => {
+        it('should return contact by delegating to findByIdOrThrow', async () => {
+            const spy = jest.spyOn(service, 'findByIdOrThrow').mockResolvedValue(mockContact);
+
+            const result = await service.get('user_123', 'contact_123');
+
+            expect(spy).toHaveBeenCalledWith('user_123', 'contact_123');
+            expect(spy).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(mockContact);
+        });
+
+        it('should propagate errors from findByIdOrThrow', async () => {
+            const error = new NotFoundException({ i18nKey: I18N_KEYS.contacts.error.notFound });
+            jest.spyOn(service, 'findByIdOrThrow').mockRejectedValue(error);
+
+            await expect(service.get('user_123', 'missing_contact')).rejects.toThrow(NotFoundException);
+        });
+    });
+
     describe('update', () => {
         it('should update contact successfully when input is valid', async () => {
             const updatedContact = {

@@ -1,6 +1,7 @@
 {
     "response": {
         "createSuccess": "Contact created successfully",
+        "getContactSuccess": "Contact retrieved successfully",
         "updateSuccess": "Contact update successfully"
     },
     "error": {
