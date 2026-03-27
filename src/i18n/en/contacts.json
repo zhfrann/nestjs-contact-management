@@ -2,7 +2,8 @@
     "response": {
         "createSuccess": "Contact created successfully",
         "getContactSuccess": "Contact retrieved successfully",
-        "updateSuccess": "Contact update successfully"
+        "updateSuccess": "Contact update successfully",
+        "deleteSuccess": "Contact deleted successfully"
     },
     "error": {
         "conflict": "Phone number already exists",

@@ -2,7 +2,8 @@
     "response": {
         "createSuccess": "Berhasil membuat kontak baru",
         "getContactSuccess": "Kontak berhasil ditemukan",
-        "updateSuccess": "Berhasil memperbarui kontak"
+        "updateSuccess": "Berhasil memperbarui kontak",
+        "deleteSuccess": "Kontak berhasil dihapus"
     },
     "error": {
         "conflict": "Nomor telepon sudah terdaftar",

@@ -355,4 +355,41 @@ describe('ContactsService', () => {
             expect(prisma.contact.update).not.toHaveBeenCalled();
         });
     });
+
+    describe('remove', () => {
+        it('should soft delete contact when contact exists', async () => {
+            const spy = jest.spyOn(service, 'findByIdOrThrow').mockResolvedValue(mockContact);
+            prisma.contact.update.mockResolvedValue({
+                ...mockContact,
+                deletedAt: new Date('2024-02-01T00:00:00.000Z'),
+            });
+
+            const result = await service.remove('user_123', 'contact_123');
+
+            expect(spy).toHaveBeenCalledWith('user_123', 'contact_123');
+            expect(spy).toHaveBeenCalledTimes(1);
+
+            expect(prisma.contact.update).toHaveBeenCalledWith({
+                where: { id: 'contact_123' },
+                data: { deletedAt: expect.any(Date) }, //eslint-disable-line @typescript-eslint/no-unsafe-assignment
+            });
+
+            expect(result).toBeUndefined();
+        });
+
+        it('should propagate errors from findByIdOrThrow', async () => {
+            const error = new NotFoundException({ i18nKey: I18N_KEYS.contacts.error.notFound });
+            jest.spyOn(service, 'findByIdOrThrow').mockRejectedValue(error);
+
+            await expect(service.remove('user_123', 'missing_contact')).rejects.toThrow(NotFoundException);
+            expect(prisma.contact.update).not.toHaveBeenCalled();
+        });
+
+        it('should propagate database errors from soft delete update', async () => {
+            jest.spyOn(service, 'findByIdOrThrow').mockResolvedValue(mockContact);
+            prisma.contact.update.mockRejectedValue(new Error('Database error'));
+
+            await expect(service.remove('user_123', 'contact_123')).rejects.toThrow('Database error');
+        });
+    });
 });

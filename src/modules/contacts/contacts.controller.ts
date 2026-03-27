@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
@@ -28,5 +28,12 @@ export class ContactsController {
     @ResponseMessage(I18N_KEYS.contacts.response.updateSuccess)
     update(@CurrentUser() user: { userId: string }, @Param('id') id: string, @Body() dto: UpdateContactDto) {
         return this.contactsService.update(user.userId, id, dto);
+    }
+
+    @Delete(':id')
+    @ResponseMessage(I18N_KEYS.contacts.response.deleteSuccess)
+    async remove(@CurrentUser() user: { userId: string }, @Param('id') id: string) {
+        await this.contactsService.remove(user.userId, id);
+        return { ok: true };
     }
 }
