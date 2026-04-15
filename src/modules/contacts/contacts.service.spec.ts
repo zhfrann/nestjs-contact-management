@@ -11,7 +11,10 @@ describe('ContactsService', () => {
             findFirst: jest.Mock;
             create: jest.Mock;
             update: jest.Mock;
+            findMany: jest.Mock;
+            count: jest.Mock;
         };
+        $transaction: jest.Mock;
     };
 
     const mockContact = {
@@ -34,7 +37,10 @@ describe('ContactsService', () => {
                 findFirst: jest.fn(),
                 create: jest.fn(),
                 update: jest.fn(),
+                findMany: jest.fn(),
+                count: jest.fn(),
             },
+            $transaction: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -390,6 +396,140 @@ describe('ContactsService', () => {
             prisma.contact.update.mockRejectedValue(new Error('Database error'));
 
             await expect(service.remove('user_123', 'contact_123')).rejects.toThrow('Database error');
+        });
+    });
+
+    describe('search', () => {
+        it('should search contacts with query, pagination, and sorting', async () => {
+            const items = [
+                {
+                    ...mockContact,
+                    id: 'contact_1',
+                    firstName: 'John',
+                },
+                {
+                    ...mockContact,
+                    id: 'contact_2',
+                    firstName: 'Johnny',
+                },
+            ];
+
+            prisma.contact.findMany.mockReturnValue('findMany-operation');
+            prisma.contact.count.mockReturnValue('count-operation');
+            prisma.$transaction.mockResolvedValue([items, 12]);
+
+            const result = await service.search('user_123', {
+                q: 'john',
+                page: 2,
+                limit: 5,
+                sortBy: 'firstName',
+                order: 'asc',
+            });
+
+            expect(prisma.contact.findMany).toHaveBeenCalledWith({
+                where: {
+                    ownerId: 'user_123',
+                    deletedAt: null,
+                    OR: [
+                        { firstName: { contains: 'john' } },
+                        { lastName: { contains: 'john' } },
+                        { email: { contains: 'john' } },
+                        { phone: { contains: 'john' } },
+                    ],
+                },
+                orderBy: { firstName: 'asc' },
+                skip: 5,
+                take: 5,
+            });
+
+            expect(prisma.contact.count).toHaveBeenCalledWith({
+                where: {
+                    ownerId: 'user_123',
+                    deletedAt: null,
+                    OR: [
+                        { firstName: { contains: 'john' } },
+                        { lastName: { contains: 'john' } },
+                        { email: { contains: 'john' } },
+                        { phone: { contains: 'john' } },
+                    ],
+                },
+            });
+
+            expect(prisma.$transaction).toHaveBeenCalledWith(['findMany-operation', 'count-operation']);
+
+            expect(result).toEqual({
+                data: {
+                    items,
+                },
+                meta: {
+                    pagination: {
+                        page: 2,
+                        limit: 5,
+                        totalItems: 12,
+                        totalPages: 3,
+                    },
+                },
+            });
+        });
+
+        it('should search contacts without q and use base where clause only', async () => {
+            prisma.contact.findMany.mockReturnValue('findMany-operation');
+            prisma.contact.count.mockReturnValue('count-operation');
+            prisma.$transaction.mockResolvedValue([[], 0]);
+
+            const result = await service.search('user_123', {
+                page: 1,
+                limit: 10,
+                sortBy: 'createdAt',
+                order: 'desc',
+            });
+
+            expect(prisma.contact.findMany).toHaveBeenCalledWith({
+                where: {
+                    ownerId: 'user_123',
+                    deletedAt: null,
+                },
+                orderBy: { createdAt: 'desc' },
+                skip: 0,
+                take: 10,
+            });
+
+            expect(prisma.contact.count).toHaveBeenCalledWith({
+                where: {
+                    ownerId: 'user_123',
+                    deletedAt: null,
+                },
+            });
+
+            expect(result).toEqual({
+                data: {
+                    items: [],
+                },
+                meta: {
+                    pagination: {
+                        page: 1,
+                        limit: 10,
+                        totalItems: 0,
+                        totalPages: 0,
+                    },
+                },
+            });
+        });
+
+        it('should propagate database errors from transaction', async () => {
+            prisma.contact.findMany.mockReturnValue('findMany-operation');
+            prisma.contact.count.mockReturnValue('count-operation');
+            prisma.$transaction.mockRejectedValue(new Error('Database error'));
+
+            await expect(
+                service.search('user_123', {
+                    q: 'john',
+                    page: 1,
+                    limit: 10,
+                    sortBy: 'createdAt',
+                    order: 'desc',
+                }),
+            ).rejects.toThrow('Database error');
         });
     });
 });

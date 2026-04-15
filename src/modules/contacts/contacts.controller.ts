@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
@@ -6,6 +6,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { SearchContactsDto } from './dto/search-contacts.dto';
 
 @Controller({ path: 'contacts', version: '1' })
 @UseGuards(JwtAuthGuard)
@@ -35,5 +36,16 @@ export class ContactsController {
     async remove(@CurrentUser() user: { userId: string }, @Param('id') id: string) {
         await this.contactsService.remove(user.userId, id);
         return { ok: true };
+    }
+
+    @Get()
+    search(@CurrentUser() user: { userId: string }, @Query() query: SearchContactsDto) {
+        return this.contactsService.search(user.userId, {
+            q: query.q,
+            page: query.page ?? 1,
+            limit: query.limit ?? 10,
+            sortBy: query.sortBy ?? 'createdAt',
+            order: query.order ?? 'desc',
+        });
     }
 }

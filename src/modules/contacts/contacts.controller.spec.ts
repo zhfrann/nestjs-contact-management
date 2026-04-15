@@ -3,6 +3,7 @@ import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { SearchContactsDto } from './dto/search-contacts.dto';
 
 describe('ContactsController', () => {
     let controller: ContactsController;
@@ -11,6 +12,7 @@ describe('ContactsController', () => {
         get: jest.Mock;
         update: jest.Mock;
         remove: jest.Mock;
+        search: jest.Mock;
     };
 
     const mockCreatedContact = {
@@ -33,6 +35,7 @@ describe('ContactsController', () => {
             get: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),
+            search: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -194,6 +197,103 @@ describe('ContactsController', () => {
             contactsService.remove.mockRejectedValue(new Error('Service error'));
 
             await expect(controller.remove({ userId: 'user_123' }, 'missing_contact')).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('search', () => {
+        const mockSearchResult = {
+            data: {
+                items: [
+                    {
+                        ...mockCreatedContact,
+                        id: 'contact_1',
+                        firstName: 'John',
+                    },
+                ],
+            },
+            meta: {
+                pagination: {
+                    page: 2,
+                    limit: 5,
+                    totalItems: 12,
+                    totalPages: 3,
+                },
+            },
+        };
+
+        it('should call contactsService.search with current user id and custom query params', async () => {
+            const query: SearchContactsDto = {
+                q: 'john',
+                page: 2,
+                limit: 5,
+                sortBy: 'firstName',
+                order: 'asc',
+            };
+
+            contactsService.search.mockResolvedValue(mockSearchResult);
+
+            const result = await controller.search({ userId: 'user_123' }, query);
+
+            expect(contactsService.search).toHaveBeenCalledWith('user_123', {
+                q: 'john',
+                page: 2,
+                limit: 5,
+                sortBy: 'firstName',
+                order: 'asc',
+            });
+            expect(contactsService.search).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(mockSearchResult);
+        });
+
+        it('should apply default query params when optional params are not provided', async () => {
+            const query: SearchContactsDto = {};
+
+            contactsService.search.mockResolvedValue({
+                data: { items: [] },
+                meta: {
+                    pagination: {
+                        page: 1,
+                        limit: 10,
+                        totalItems: 0,
+                        totalPages: 0,
+                    },
+                },
+            });
+
+            const result = await controller.search({ userId: 'user_123' }, query);
+
+            expect(contactsService.search).toHaveBeenCalledWith('user_123', {
+                q: undefined,
+                page: 1,
+                limit: 10,
+                sortBy: 'createdAt',
+                order: 'desc',
+            });
+            expect(result).toEqual({
+                data: { items: [] },
+                meta: {
+                    pagination: {
+                        page: 1,
+                        limit: 10,
+                        totalItems: 0,
+                        totalPages: 0,
+                    },
+                },
+            });
+        });
+
+        it('should propagate errors from contactsService.search', async () => {
+            const query: SearchContactsDto = {
+                q: 'john',
+                page: 1,
+                limit: 10,
+                sortBy: 'createdAt',
+                order: 'desc',
+            };
+
+            contactsService.search.mockRejectedValue(new Error('Service error'));
+
+            await expect(controller.search({ userId: 'user_123' }, query)).rejects.toThrow('Service error');
         });
     });
 });
