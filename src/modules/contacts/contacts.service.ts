@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { SortField } from './dto/search-contacts.dto';
 
 @Injectable()
 export class ContactsService {
@@ -98,5 +99,55 @@ export class ContactsService {
             where: { id: contactId },
             data: { deletedAt: new Date() },
         });
+    }
+
+    async search(
+        userId: string,
+        params: {
+            q?: string;
+            page: number;
+            limit: number;
+            sortBy: SortField;
+            order: 'asc' | 'desc';
+        },
+    ) {
+        const skip = (params.page - 1) * params.limit;
+
+        const whereClause = {
+            ownerId: userId,
+            deletedAt: null,
+            ...(params.q
+                ? {
+                      OR: [
+                          { firstName: { contains: params.q } },
+                          { lastName: { contains: params.q } },
+                          { email: { contains: params.q } },
+                          { phone: { contains: params.q } },
+                      ],
+                  }
+                : {}),
+        };
+
+        const [items, totalItems] = await this.prisma.$transaction([
+            this.prisma.contact.findMany({
+                where: whereClause,
+                orderBy: { [params.sortBy]: params.order },
+                skip: skip,
+                take: params.limit,
+            }),
+            this.prisma.contact.count({ where: whereClause }),
+        ]);
+
+        return {
+            data: { items: items },
+            meta: {
+                pagination: {
+                    page: params.page,
+                    limit: params.limit,
+                    totalItems: totalItems,
+                    totalPages: Math.ceil(totalItems / params.limit),
+                },
+            },
+        };
     }
 }
