@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AddressesService } from './addresses.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateAddressDto } from './dto/create-address.dto';
@@ -15,5 +15,11 @@ export class AddressesController {
     @ResponseMessage(I18N_KEYS.addresses.response.createSuccess)
     create(@CurrentUser() user: { userId: string }, @Param('contactId') contactId: string, @Body() dto: CreateAddressDto) {
         return this.addressesService.create(user.userId, contactId, dto);
+    }
+
+    @Get()
+    @ResponseMessage(I18N_KEYS.addresses.response.getAllAddressesSuccess)
+    list(@CurrentUser() user: { userId: string }, @Param('contactId') contactId: string) {
+        return this.addressesService.list(user.userId, contactId);
     }
 }

@@ -106,4 +106,13 @@ export class AddressesService {
             });
         });
     }
+
+    async list(userId: string, contactId: string) {
+        await this.assertContactOwner(userId, contactId);
+
+        return this.prisma.address.findMany({
+            where: { contactId: contactId },
+            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+        });
+    }
 }
