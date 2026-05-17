@@ -4,7 +4,7 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 
 @Injectable()
 export class AddressesService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) { }
 
     /**
      * Helper function to assert that the user is the owner of the contact
@@ -104,6 +104,15 @@ export class AddressesService {
                     isPrimary: input.isPrimary ?? false,
                 },
             });
+        });
+    }
+
+    async list(userId: string, contactId: string) {
+        await this.assertContactOwner(userId, contactId);
+
+        return this.prisma.address.findMany({
+            where: { contactId: contactId },
+            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
         });
     }
 }

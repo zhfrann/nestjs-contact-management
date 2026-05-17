@@ -1,6 +1,7 @@
 {
     "response": {
-        "createSuccess": "Address created successfully"
+        "createSuccess": "Address created successfully",
+        "getAllAddressesSuccess": "All addresses retrieved successfully"
     },
     "error": {
         "notFound": "Address not found"
