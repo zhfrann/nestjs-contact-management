@@ -84,4 +84,12 @@ export const I18N_KEYS = {
             notFound: 'contacts.error.notFound',
         },
     },
+    addresses: {
+        response: {
+            createSuccess: 'addresses.response.createSuccess',
+        },
+        error: {
+            notFound: 'addresses.error.notFound',
+        },
+    },
 } as const;
