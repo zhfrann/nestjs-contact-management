@@ -1,0 +1,19 @@
+import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { AddressesService } from './addresses.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CreateAddressDto } from './dto/create-address.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
+import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
+
+@Controller({ path: 'contacts/:contactId/addresses', version: '1' })
+@UseGuards(JwtAuthGuard)
+export class AddressesController {
+    constructor(private readonly addressesService: AddressesService) { }
+
+    @Post()
+    @ResponseMessage(I18N_KEYS.addresses.response.createSuccess)
+    create(@CurrentUser() user: { userId: string }, @Param('contactId') contactId: string, @Body() dto: CreateAddressDto) {
+        return this.addressesService.create(user.userId, contactId, dto);
+    }
+}

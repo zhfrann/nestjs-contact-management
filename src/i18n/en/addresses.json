@@ -1,0 +1,8 @@
+{
+    "response": {
+        "createSuccess": "Address created successfully"
+    },
+    "error": {
+        "notFound": "Address not found"
+    }
+}

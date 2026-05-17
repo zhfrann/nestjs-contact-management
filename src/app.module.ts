@@ -20,6 +20,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ContactsService } from './modules/contacts/contacts.service';
 import { ContactsController } from './modules/contacts/contacts.controller';
 import { ContactsModule } from './modules/contacts/contacts.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 
 @Module({
     imports: [
@@ -63,6 +64,7 @@ import { ContactsModule } from './modules/contacts/contacts.module';
         AuthModule,
         UsersModule,
         ContactsModule,
+        AddressesModule,
     ],
     controllers: [AppController, ContactsController],
     providers: [
