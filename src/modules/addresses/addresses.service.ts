@@ -107,7 +107,6 @@ export class AddressesService {
         });
     }
 
-
     async getById(userId: string, contactId: string, addressId: string) {
         return this.findAddressOrThrow(userId, contactId, addressId);
     }
