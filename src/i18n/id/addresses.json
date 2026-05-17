@@ -2,6 +2,7 @@
     "response": {
         "createSuccess": "Berhasil membuat alamat baru",
         "getAddressSuccess": "Berhasil mengambil alamat"
+        "getAllAddressesSuccess": "Berhasil mengambil semua alamat"
     },
     "error": {
         "notFound": "Alamat tidak ditemukan"

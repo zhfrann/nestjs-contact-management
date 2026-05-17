@@ -107,7 +107,17 @@ export class AddressesService {
         });
     }
 
+
     async getById(userId: string, contactId: string, addressId: string) {
         return this.findAddressOrThrow(userId, contactId, addressId);
+    }
+
+    async list(userId: string, contactId: string) {
+        await this.assertContactOwner(userId, contactId);
+
+        return this.prisma.address.findMany({
+            where: { contactId: contactId },
+            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+        });
     }
 }

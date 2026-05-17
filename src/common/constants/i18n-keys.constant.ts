@@ -88,6 +88,7 @@ export const I18N_KEYS = {
         response: {
             createSuccess: 'addresses.response.createSuccess',
             getAddressSuccess: 'addresses.response.getAddressSuccess',
+            getAllAddressesSuccess: 'addresses.response.getAllAddressesSuccess',
         },
         error: {
             notFound: 'addresses.error.notFound',
