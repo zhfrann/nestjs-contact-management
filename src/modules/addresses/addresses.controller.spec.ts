@@ -7,6 +7,8 @@ describe('AddressesController', () => {
     let controller: AddressesController;
     let addressesService: {
         create: jest.Mock;
+        getById: jest.Mock;
+        list: jest.Mock;
     };
 
     const mockAddress = {
@@ -26,6 +28,8 @@ describe('AddressesController', () => {
     beforeEach(async () => {
         addressesService = {
             create: jest.fn(),
+            getById: jest.fn(),
+            list: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -110,6 +114,47 @@ describe('AddressesController', () => {
             addressesService.create.mockRejectedValue(new Error('Service error'));
 
             await expect(controller.create({ userId: 'user_123' }, 'contact_123', dto)).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('getById', () => {
+        it('should call addressesService.getById with current user id, contact id, and address id', async () => {
+            addressesService.getById.mockResolvedValue(mockAddress);
+
+            const result = await controller.getById({ userId: 'user_123' }, 'contact_123', 'addr_123');
+
+            expect(addressesService.getById).toHaveBeenCalledWith('user_123', 'contact_123', 'addr_123');
+            expect(addressesService.getById).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(mockAddress);
+        });
+
+        it('should propagate errors from addressesService.getById', async () => {
+            addressesService.getById.mockRejectedValue(new Error('Service error'));
+
+            await expect(controller.getById({ userId: 'user_123' }, 'contact_123', 'missing_addr')).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('list', () => {
+        it('should call addressesService.list with current user id and contact id', async () => {
+            const listResult = [
+                { ...mockAddress, id: 'addr_1', isPrimary: true },
+                { ...mockAddress, id: 'addr_2', isPrimary: false },
+            ];
+
+            addressesService.list.mockResolvedValue(listResult);
+
+            const result = await controller.list({ userId: 'user_123' }, 'contact_123');
+
+            expect(addressesService.list).toHaveBeenCalledWith('user_123', 'contact_123');
+            expect(addressesService.list).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(listResult);
+        });
+
+        it('should propagate errors from addressesService.list', async () => {
+            addressesService.list.mockRejectedValue(new Error('Service error'));
+
+            await expect(controller.list({ userId: 'user_123' }, 'contact_123')).rejects.toThrow('Service error');
         });
     });
 });
