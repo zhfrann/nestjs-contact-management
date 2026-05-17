@@ -10,6 +10,10 @@ describe('AddressesService', () => {
         contact: {
             findFirst: jest.Mock;
         };
+        address: {
+            findFirst: jest.Mock;
+            findMany: jest.Mock;
+        };
         $transaction: jest.Mock;
     };
     let tx: {
@@ -54,6 +58,10 @@ describe('AddressesService', () => {
         prisma = {
             contact: {
                 findFirst: jest.fn(),
+            },
+            address: {
+                findFirst: jest.fn(),
+                findMany: jest.fn(),
             },
             $transaction: jest.fn((callback: (txParam: typeof tx) => unknown) => callback(tx)),
         };
@@ -237,6 +245,91 @@ describe('AddressesService', () => {
             ).rejects.toThrow('Database error');
 
             expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('getById', () => {
+        it('should return address when it exists and belongs to the contact owner', async () => {
+            prisma.address.findFirst.mockResolvedValue(mockAddress);
+
+            const result = await service.getById('user_123', 'contact_123', 'addr_123');
+
+            expect(prisma.address.findFirst).toHaveBeenCalledWith({
+                where: {
+                    id: 'addr_123',
+                    contactId: 'contact_123',
+                    contact: { ownerId: 'user_123', deletedAt: null },
+                },
+            });
+            expect(result).toEqual(mockAddress);
+        });
+
+        it('should throw NotFoundException when address is not found', async () => {
+            prisma.address.findFirst.mockResolvedValue(null);
+
+            let caughtError: unknown;
+
+            try {
+                await service.getById('user_123', 'contact_123', 'missing_addr');
+            } catch (error) {
+                caughtError = error;
+            }
+
+            expect(caughtError).toBeInstanceOf(NotFoundException);
+            expect((caughtError as NotFoundException).getResponse()).toEqual({
+                i18nKey: I18N_KEYS.addresses.error.notFound,
+            });
+        });
+    });
+
+    describe('list', () => {
+        it('should return list of addresses ordered by primary and createdAt desc', async () => {
+            prisma.contact.findFirst.mockResolvedValue({ id: 'contact_123' });
+            prisma.address.findMany.mockResolvedValue([
+                { ...mockAddress, id: 'addr_1', isPrimary: true },
+                { ...mockAddress, id: 'addr_2', isPrimary: false },
+            ]);
+
+            const result = await service.list('user_123', 'contact_123');
+
+            expect(prisma.contact.findFirst).toHaveBeenCalledWith({
+                where: { id: 'contact_123', ownerId: 'user_123', deletedAt: null },
+                select: { id: true },
+            });
+            expect(prisma.address.findMany).toHaveBeenCalledWith({
+                where: { contactId: 'contact_123' },
+                orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+            });
+
+            expect(result).toEqual([
+                { ...mockAddress, id: 'addr_1', isPrimary: true },
+                { ...mockAddress, id: 'addr_2', isPrimary: false },
+            ]);
+        });
+
+        it('should throw NotFoundException when contact is not found', async () => {
+            prisma.contact.findFirst.mockResolvedValue(null);
+
+            let caughtError: unknown;
+
+            try {
+                await service.list('user_123', 'contact_123');
+            } catch (error) {
+                caughtError = error;
+            }
+
+            expect(caughtError).toBeInstanceOf(NotFoundException);
+            expect((caughtError as NotFoundException).getResponse()).toEqual({
+                i18nKey: I18N_KEYS.contacts.error.notFound,
+            });
+            expect(prisma.address.findMany).not.toHaveBeenCalled();
+        });
+
+        it('should propagate errors from prisma.address.findMany', async () => {
+            prisma.contact.findFirst.mockResolvedValue({ id: 'contact_123' });
+            prisma.address.findMany.mockRejectedValue(new Error('Database error'));
+
+            await expect(service.list('user_123', 'contact_123')).rejects.toThrow('Database error');
         });
     });
 });
