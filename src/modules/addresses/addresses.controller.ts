@@ -9,7 +9,7 @@ import { I18N_KEYS } from 'src/common/constants/i18n-keys.constant';
 @Controller({ path: 'contacts/:contactId/addresses', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class AddressesController {
-    constructor(private readonly addressesService: AddressesService) { }
+    constructor(private readonly addressesService: AddressesService) {}
 
     @Post()
     @ResponseMessage(I18N_KEYS.addresses.response.createSuccess)
