@@ -17,6 +17,12 @@ export class AddressesController {
         return this.addressesService.create(user.userId, contactId, dto);
     }
 
+    @Get(':addressId')
+    @ResponseMessage(I18N_KEYS.addresses.response.getAddressSuccess)
+    getById(@CurrentUser() user: { userId: string }, @Param('contactId') contactId: string, @Param('addressId') addressId: string) {
+        return this.addressesService.getById(user.userId, contactId, addressId);
+    }
+      
     @Get()
     @ResponseMessage(I18N_KEYS.addresses.response.getAllAddressesSuccess)
     list(@CurrentUser() user: { userId: string }, @Param('contactId') contactId: string) {
