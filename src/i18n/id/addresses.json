@@ -3,7 +3,8 @@
         "createSuccess": "Berhasil membuat alamat baru",
         "getAddressSuccess": "Berhasil mengambil alamat",
         "getAllAddressesSuccess": "Berhasil mengambil semua alamat",
-        "updateSuccess": "Berhasil memperbarui alamat"
+        "updateSuccess": "Berhasil memperbarui alamat",
+        "deleteSuccess": "Berhasil menghapus alamat"
     },
     "error": {
         "notFound": "Alamat tidak ditemukan"

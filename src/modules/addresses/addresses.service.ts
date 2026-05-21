@@ -164,4 +164,24 @@ export class AddressesService {
             });
         });
     }
+
+    async remove(userId: string, contactId: string, addressId: string) {
+        const address = await this.findAddressOrThrow(userId, contactId, addressId);
+
+        await this.prisma.address.delete({ where: { id: address.id } });
+
+        // if the deleted address is primary, set primary to the newest remaining address
+        if (address.isPrimary) {
+            const latest = await this.prisma.address.findFirst({
+                where: { contactId },
+                orderBy: { createdAt: 'desc' },
+            });
+            if (latest) {
+                await this.prisma.address.update({
+                    where: { id: latest.id },
+                    data: { isPrimary: true },
+                });
+            }
+        }
+    }
 }
