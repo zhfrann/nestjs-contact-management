@@ -13,6 +13,8 @@ describe('AddressesService', () => {
         address: {
             findFirst: jest.Mock;
             findMany: jest.Mock;
+            delete: jest.Mock;
+            update: jest.Mock;
         };
         $transaction: jest.Mock;
     };
@@ -64,6 +66,8 @@ describe('AddressesService', () => {
             address: {
                 findFirst: jest.fn(),
                 findMany: jest.fn(),
+                delete: jest.fn(),
+                update: jest.fn(),
             },
             $transaction: jest.fn((callback: (txParam: typeof tx) => unknown) => callback(tx)),
         };
@@ -449,6 +453,99 @@ describe('AddressesService', () => {
             ).rejects.toThrow('Database error');
 
             expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('remove', () => {
+        it('should delete address when it is not primary', async () => {
+            prisma.address.findFirst.mockResolvedValueOnce({
+                ...mockAddress,
+                isPrimary: false,
+            });
+            prisma.address.delete.mockResolvedValue({ ...mockAddress });
+
+            const result = await service.remove('user_123', 'contact_123', 'addr_123');
+
+            expect(prisma.address.findFirst).toHaveBeenCalledWith({
+                where: {
+                    id: 'addr_123',
+                    contactId: 'contact_123',
+                    contact: { ownerId: 'user_123', deletedAt: null },
+                },
+            });
+            expect(prisma.address.delete).toHaveBeenCalledWith({ where: { id: 'addr_123' } });
+            expect(prisma.address.update).not.toHaveBeenCalled();
+            expect(result).toBeUndefined();
+        });
+
+        it('should set newest address as primary when deleted address is primary', async () => {
+            prisma.address.findFirst
+                .mockResolvedValueOnce({ ...mockAddress, isPrimary: true }) // findAddressOrThrow
+                .mockResolvedValueOnce({ id: 'addr_latest' }); // latest address
+
+            prisma.address.delete.mockResolvedValue({ ...mockAddress });
+            prisma.address.update.mockResolvedValue({
+                ...mockAddress,
+                id: 'addr_latest',
+                isPrimary: true,
+            });
+
+            await service.remove('user_123', 'contact_123', 'addr_123');
+
+            expect(prisma.address.findFirst).toHaveBeenNthCalledWith(1, {
+                where: {
+                    id: 'addr_123',
+                    contactId: 'contact_123',
+                    contact: { ownerId: 'user_123', deletedAt: null },
+                },
+            });
+
+            expect(prisma.address.findFirst).toHaveBeenNthCalledWith(2, {
+                where: { contactId: 'contact_123' },
+                orderBy: { createdAt: 'desc' },
+            });
+
+            expect(prisma.address.update).toHaveBeenCalledWith({
+                where: { id: 'addr_latest' },
+                data: { isPrimary: true },
+            });
+        });
+
+        it('should not update any address when deleted primary has no remaining addresses', async () => {
+            prisma.address.findFirst
+                .mockResolvedValueOnce({ ...mockAddress, isPrimary: true }) // findAddressOrThrow
+                .mockResolvedValueOnce(null); // no remaining addresses
+
+            prisma.address.delete.mockResolvedValue({ ...mockAddress });
+
+            await service.remove('user_123', 'contact_123', 'addr_123');
+
+            expect(prisma.address.update).not.toHaveBeenCalled();
+        });
+
+        it('should throw NotFoundException when address is not found', async () => {
+            prisma.address.findFirst.mockResolvedValue(null);
+
+            let caughtError: unknown;
+
+            try {
+                await service.remove('user_123', 'contact_123', 'missing_addr');
+            } catch (error) {
+                caughtError = error;
+            }
+
+            expect(caughtError).toBeInstanceOf(NotFoundException);
+            expect((caughtError as NotFoundException).getResponse()).toEqual({
+                i18nKey: I18N_KEYS.addresses.error.notFound,
+            });
+            expect(prisma.address.delete).not.toHaveBeenCalled();
+        });
+
+        it('should propagate errors from prisma.address.delete', async () => {
+            prisma.address.findFirst.mockResolvedValue({ ...mockAddress, isPrimary: false });
+            prisma.address.delete.mockRejectedValue(new Error('Database error'));
+
+            await expect(service.remove('user_123', 'contact_123', 'addr_123')).rejects.toThrow('Database error');
         });
     });
 });

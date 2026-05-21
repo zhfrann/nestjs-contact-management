@@ -11,6 +11,7 @@ describe('AddressesController', () => {
         getById: jest.Mock;
         list: jest.Mock;
         update: jest.Mock;
+        remove: jest.Mock;
     };
 
     const mockAddress = {
@@ -33,6 +34,7 @@ describe('AddressesController', () => {
             getById: jest.fn(),
             list: jest.fn(),
             update: jest.fn(),
+            remove: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -209,6 +211,24 @@ describe('AddressesController', () => {
             addressesService.update.mockRejectedValue(new Error('Service error'));
 
             await expect(controller.update({ userId: 'user_123' }, 'contact_123', 'addr_123', dto)).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('remove', () => {
+        it('should call addressesService.remove with current user id, contact id, and address id, then return ok', async () => {
+            addressesService.remove.mockResolvedValue(undefined);
+
+            const result = await controller.remove({ userId: 'user_123' }, 'contact_123', 'addr_123');
+
+            expect(addressesService.remove).toHaveBeenCalledWith('user_123', 'contact_123', 'addr_123');
+            expect(addressesService.remove).toHaveBeenCalledTimes(1);
+            expect(result).toEqual({ ok: true });
+        });
+
+        it('should propagate errors from addressesService.remove', async () => {
+            addressesService.remove.mockRejectedValue(new Error('Service error'));
+
+            await expect(controller.remove({ userId: 'user_123' }, 'contact_123', 'addr_123')).rejects.toThrow('Service error');
         });
     });
 });
