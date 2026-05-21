@@ -119,49 +119,4 @@ export class AddressesService {
             orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
         });
     }
-
-    async update(
-        userId: string,
-        contactId: string,
-        addressId: string,
-        input: Partial<{
-            label: 'HOME' | 'WORK' | 'OTHER';
-            street: string;
-            city: string;
-            province: string;
-            postalCode: string;
-            countryCode: string; // ISO 3166-1 alpha-2 code, ex: ID, US, SG
-            isPrimary: boolean;
-        }>,
-    ) {
-        await this.findAddressOrThrow(userId, contactId, addressId);
-
-        const wantPrimary = input.isPrimary === true;
-
-        return this.prisma.$transaction(async (tx) => {
-            if (wantPrimary) {
-                await tx.address.updateMany({
-                    where: {
-                        contactId: contactId,
-                        isPrimary: true,
-                        NOT: { id: addressId },
-                    },
-                    data: { isPrimary: false },
-                });
-            }
-
-            return tx.address.update({
-                where: { id: addressId },
-                data: {
-                    label: input.label ?? undefined,
-                    street: input.street ?? undefined,
-                    city: input.city ?? undefined,
-                    province: input.province ?? undefined,
-                    postalCode: input.postalCode ?? undefined,
-                    countryCode: input.countryCode ?? undefined,
-                    isPrimary: input.isPrimary ?? undefined,
-                },
-            });
-        });
-    }
 }
