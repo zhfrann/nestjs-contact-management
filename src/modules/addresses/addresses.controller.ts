@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AddressesService } from './addresses.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateAddressDto } from './dto/create-address.dto';
@@ -39,5 +39,12 @@ export class AddressesController {
         @Body() dto: UpdateAddressDto,
     ) {
         return this.addressesService.update(user.userId, contactId, addressId, dto);
+    }
+
+    @Delete(':addressId')
+    @ResponseMessage(I18N_KEYS.addresses.response.deleteSuccess)
+    async remove(@CurrentUser() user: { userId: string }, @Param('contactId') contactId: string, @Param('addressId') addressId: string) {
+        await this.addressesService.remove(user.userId, contactId, addressId);
+        return { ok: true };
     }
 }
