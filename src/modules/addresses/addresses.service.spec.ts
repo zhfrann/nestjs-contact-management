@@ -21,6 +21,7 @@ describe('AddressesService', () => {
             updateMany: jest.Mock;
             findFirst: jest.Mock;
             create: jest.Mock;
+            update: jest.Mock;
         };
     };
 
@@ -52,6 +53,7 @@ describe('AddressesService', () => {
                 updateMany: jest.fn(),
                 findFirst: jest.fn(),
                 create: jest.fn(),
+                update: jest.fn(),
             },
         };
 
@@ -330,6 +332,123 @@ describe('AddressesService', () => {
             prisma.address.findMany.mockRejectedValue(new Error('Database error'));
 
             await expect(service.list('user_123', 'contact_123')).rejects.toThrow('Database error');
+        });
+    });
+
+    describe('update', () => {
+        it('should update address and set other primary to false when isPrimary is true', async () => {
+            prisma.address.findFirst.mockResolvedValue(mockAddress);
+            tx.address.updateMany.mockResolvedValue({ count: 1 });
+
+            const updatedAddress = {
+                ...mockAddress,
+                label: 'WORK',
+                isPrimary: true,
+            };
+
+            tx.address.update.mockResolvedValue(updatedAddress);
+
+            const result = await service.update('user_123', 'contact_123', 'addr_123', {
+                label: 'WORK',
+                isPrimary: true,
+            });
+
+            expect(prisma.address.findFirst).toHaveBeenCalledWith({
+                where: {
+                    id: 'addr_123',
+                    contactId: 'contact_123',
+                    contact: { ownerId: 'user_123', deletedAt: null },
+                },
+            });
+
+            expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+            expect(tx.address.updateMany).toHaveBeenCalledWith({
+                where: {
+                    contactId: 'contact_123',
+                    isPrimary: true,
+                    NOT: { id: 'addr_123' },
+                },
+                data: { isPrimary: false },
+            });
+
+            expect(tx.address.update).toHaveBeenCalledWith({
+                where: { id: 'addr_123' },
+                data: {
+                    label: 'WORK',
+                    street: undefined,
+                    city: undefined,
+                    province: undefined,
+                    postalCode: undefined,
+                    countryCode: undefined,
+                    isPrimary: true,
+                },
+            });
+
+            expect(result).toEqual(updatedAddress);
+        });
+
+        it('should update only provided fields and skip updateMany when isPrimary is not true', async () => {
+            prisma.address.findFirst.mockResolvedValue(mockAddress);
+
+            const updatedAddress = {
+                ...mockAddress,
+                city: 'Bandung',
+            };
+
+            tx.address.update.mockResolvedValue(updatedAddress);
+
+            const result = await service.update('user_123', 'contact_123', 'addr_123', {
+                city: 'Bandung',
+            });
+
+            expect(tx.address.updateMany).not.toHaveBeenCalled();
+            expect(tx.address.update).toHaveBeenCalledWith({
+                where: { id: 'addr_123' },
+                data: {
+                    label: undefined,
+                    street: undefined,
+                    city: 'Bandung',
+                    province: undefined,
+                    postalCode: undefined,
+                    countryCode: undefined,
+                    isPrimary: undefined,
+                },
+            });
+
+            expect(result).toEqual(updatedAddress);
+        });
+
+        it('should throw NotFoundException when address is not found', async () => {
+            prisma.address.findFirst.mockResolvedValue(null);
+
+            let caughtError: unknown;
+
+            try {
+                await service.update('user_123', 'contact_123', 'missing_addr', {
+                    city: 'Bandung',
+                });
+            } catch (error) {
+                caughtError = error;
+            }
+
+            expect(caughtError).toBeInstanceOf(NotFoundException);
+            expect((caughtError as NotFoundException).getResponse()).toEqual({
+                i18nKey: I18N_KEYS.addresses.error.notFound,
+            });
+            expect(prisma.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('should propagate errors from address update inside transaction', async () => {
+            prisma.address.findFirst.mockResolvedValue(mockAddress);
+            tx.address.update.mockRejectedValue(new Error('Database error'));
+
+            await expect(
+                service.update('user_123', 'contact_123', 'addr_123', {
+                    city: 'Bandung',
+                }),
+            ).rejects.toThrow('Database error');
+
+            expect(prisma.$transaction).toHaveBeenCalledTimes(1);
         });
     });
 });
