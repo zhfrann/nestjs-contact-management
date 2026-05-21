@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-05-22
+
+### Added
+
+- Create, update, and remove contact's addresses
+- Get a contact's address by contact ID & address
+- Automatically set primary address for the first created address
+- Remove primary address will set the newest remaining address to be primary
+
 ## [0.2.0] - 2026-05-18
 
 ### Added
