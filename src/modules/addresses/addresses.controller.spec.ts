@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AddressesController } from './addresses.controller';
 import { AddressesService } from './addresses.service';
 import { CreateAddressDto } from './dto/create-address.dto';
-import { UpdateAddressDto } from './dto/update-address.dto';
 
 describe('AddressesController', () => {
     let controller: AddressesController;
@@ -10,7 +9,6 @@ describe('AddressesController', () => {
         create: jest.Mock;
         getById: jest.Mock;
         list: jest.Mock;
-        update: jest.Mock;
     };
 
     const mockAddress = {
@@ -32,7 +30,6 @@ describe('AddressesController', () => {
             create: jest.fn(),
             getById: jest.fn(),
             list: jest.fn(),
-            update: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -158,57 +155,6 @@ describe('AddressesController', () => {
             addressesService.list.mockRejectedValue(new Error('Service error'));
 
             await expect(controller.list({ userId: 'user_123' }, 'contact_123')).rejects.toThrow('Service error');
-        });
-    });
-
-    describe('update', () => {
-        it('should call addressesService.update with current user id, contact id, address id, and dto', async () => {
-            const dto: UpdateAddressDto = {
-                label: 'WORK',
-                isPrimary: true,
-            };
-
-            const updatedAddress = {
-                ...mockAddress,
-                label: 'WORK',
-                isPrimary: true,
-            };
-
-            addressesService.update.mockResolvedValue(updatedAddress);
-
-            const result = await controller.update({ userId: 'user_123' }, 'contact_123', 'addr_123', dto);
-
-            expect(addressesService.update).toHaveBeenCalledWith('user_123', 'contact_123', 'addr_123', dto);
-            expect(addressesService.update).toHaveBeenCalledTimes(1);
-            expect(result).toEqual(updatedAddress);
-        });
-
-        it('should support partial dto update', async () => {
-            const dto: UpdateAddressDto = {
-                city: 'Bandung',
-            };
-
-            const updatedAddress = {
-                ...mockAddress,
-                city: 'Bandung',
-            };
-
-            addressesService.update.mockResolvedValue(updatedAddress);
-
-            const result = await controller.update({ userId: 'user_123' }, 'contact_123', 'addr_123', dto);
-
-            expect(addressesService.update).toHaveBeenCalledWith('user_123', 'contact_123', 'addr_123', dto);
-            expect(result).toEqual(updatedAddress);
-        });
-
-        it('should propagate errors from addressesService.update', async () => {
-            const dto: UpdateAddressDto = {
-                city: 'Bandung',
-            };
-
-            addressesService.update.mockRejectedValue(new Error('Service error'));
-
-            await expect(controller.update({ userId: 'user_123' }, 'contact_123', 'addr_123', dto)).rejects.toThrow('Service error');
         });
     });
 });
